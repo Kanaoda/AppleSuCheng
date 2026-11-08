@@ -9,7 +9,7 @@
 
 ## 贊助
 
-`.github/FUNDING.yml` 已設 GitHub Sponsors（`Kanaoda`）與 Buy Me a Coffee。
+`.github/FUNDING.yml` 已設 GitHub Sponsors（`Kanaoda`）、Buy Me a Coffee、PayMe（`https://payme.hsbc/kanaoda`）。
 
 ## Release（一般用戶）
 

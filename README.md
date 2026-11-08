@@ -12,6 +12,7 @@
 <p align="center">
   <a href="https://github.com/sponsors/Kanaoda">GitHub Sponsors</a> ·
   <a href="https://buymeacoffee.com/kanaoda">Buy Me a Coffee</a> ·
+  <a href="https://payme.hsbc/kanaoda">PayMe</a> ·
   <a href="https://github.com/Kanaoda">Kanaoda</a>
 </p>
 
@@ -104,6 +105,7 @@ docs/            # 文件
 
 - [Buy Me a Coffee](https://buymeacoffee.com/kanaoda)
 - [GitHub Sponsors](https://github.com/sponsors/Kanaoda)
+- [PayMe](https://payme.hsbc/kanaoda)
 
 歡迎 Star，讓更多 Windows→Mac 用家找得到。
 

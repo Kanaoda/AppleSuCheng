@@ -1,123 +1,123 @@
 {
-  "sourceLanguage" : "en",
-  "strings" : {
-    "CFBundleDisplayName" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Apple SuCheng"
+  "sourceLanguage": "en",
+  "strings": {
+    "CFBundleDisplayName": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apple SuCheng"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "蘋果速成"
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "蘋果速成"
           }
         },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "蘋果速成"
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "蘋果速成"
           }
         }
       }
     },
-    "CFBundleName" : {
-      "comment" : "父層留空，避免系統設定疊兩行同名",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : ""
+    "CFBundleName": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apple SuCheng"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : ""
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "蘋果速成"
           }
         },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : ""
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "蘋果速成"
+          }
+        }
+      },
+      "comment": "產品短名；勿留空，否則 Fn HUD 可能顯示 Bundle ID"
+    },
+    "com.applesucheng.inputmethod.SuCheng": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apple SuCheng"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "蘋果速成"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "蘋果速成"
+          }
+        }
+      },
+      "comment": "父輸入源顯示名；勿留空，否則 Fn 切換中間會顯示 com.applesucheng…"
+    },
+    "com.applesucheng.inputmethod.SuCheng.Hant": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apple SuCheng"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "蘋果速成"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "蘋果速成"
           }
         }
       }
     },
-    "com.applesucheng.inputmethod.SuCheng" : {
-      "comment" : "父輸入法顯示名；留空避免與 .Hant 疊兩行",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : ""
+    "NSHumanReadableCopyright": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kanaoda · Apple SuCheng"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : ""
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kanaoda · 蘋果速成"
           }
         },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : ""
-          }
-        }
-      }
-    },
-    "com.applesucheng.inputmethod.SuCheng.Hant" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Apple SuCheng"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "蘋果速成"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "蘋果速成"
-          }
-        }
-      }
-    },
-    "NSHumanReadableCopyright" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Kanaoda · Apple SuCheng"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Kanaoda · 蘋果速成"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Kanaoda · 蘋果速成"
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kanaoda · 蘋果速成"
           }
         }
       }
     }
   },
-  "version" : "1.0"
+  "version": "1.0"
 }

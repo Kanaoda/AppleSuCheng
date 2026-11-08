@@ -83,7 +83,7 @@ conn = "AppleSuCheng_Connection"
 
 info["CFBundleIdentifier"] = bundle
 info["TISInputSourceID"] = bundle
-info["CFBundleName"] = "AppleSuCheng"
+info["CFBundleName"] = "Apple SuCheng"
 info["CFBundleDisplayName"] = "蘋果速成"
 info["CFBundleExecutable"] = "AppleSuCheng"
 info["CFBundleVersion"] = "0.2.0" if phase_b else "0.1.0"
@@ -148,11 +148,11 @@ cp -R "$ROOT/dist.noindex/Preferences.prefPane" "$RES/Preferences.prefPane"
 [[ -f "$ASSETS/keyboard_preview.png" ]] && cp "$ASSETS/keyboard_preview.png" "$RES/Preferences.prefPane/Contents/Resources/keyboard_preview.png"
 
 for lang in Base zh-Hant zh-Hans en; do mkdir -p "$RES/$lang.lproj"; done
-# 系統設定第二行顯示父輸入法名稱；設成空字串才不會疊出兩行同名
+# 父 ID 與 .Hant 都必須有顯示名；父層留空會讓 Fn HUD 露出 Bundle ID（com.applesucheng…）
 cat > "$RES/Base.lproj/InfoPlist.strings" <<'EOF'
 CFBundleDisplayName = "Apple SuCheng";
-CFBundleName = "";
-"com.applesucheng.inputmethod.SuCheng" = "";
+CFBundleName = "Apple SuCheng";
+"com.applesucheng.inputmethod.SuCheng" = "Apple SuCheng";
 "com.applesucheng.inputmethod.SuCheng.Hant" = "Apple SuCheng";
 EOF
 cat > "$RES/Base.lproj/Localizable.strings" <<'EOF'
@@ -165,9 +165,9 @@ cat > "$RES/Base.lproj/Localizable.strings" <<'EOF'
 EOF
 cat > "$RES/zh-Hant.lproj/InfoPlist.strings" <<'EOF'
 CFBundleDisplayName = "蘋果速成";
-CFBundleName = "";
+CFBundleName = "蘋果速成";
 NSHumanReadableCopyright = "Kanaoda · Apple SuCheng";
-"com.applesucheng.inputmethod.SuCheng" = "";
+"com.applesucheng.inputmethod.SuCheng" = "蘋果速成";
 "com.applesucheng.inputmethod.SuCheng.Hant" = "蘋果速成";
 EOF
 cat > "$RES/zh-Hant.lproj/Localizable.strings" <<'EOF'
@@ -187,8 +187,8 @@ cp "$RES/zh-Hant.lproj/InfoPlist.strings" "$RES/zh-Hans.lproj/"
 cp "$RES/zh-Hant.lproj/Localizable.strings" "$RES/zh-Hans.lproj/"
 cat > "$RES/en.lproj/InfoPlist.strings" <<'EOF'
 CFBundleDisplayName = "Apple SuCheng";
-CFBundleName = "";
-"com.applesucheng.inputmethod.SuCheng" = "";
+CFBundleName = "Apple SuCheng";
+"com.applesucheng.inputmethod.SuCheng" = "Apple SuCheng";
 "com.applesucheng.inputmethod.SuCheng.Hant" = "Apple SuCheng";
 EOF
 cat > "$RES/en.lproj/Localizable.strings" <<'EOF'

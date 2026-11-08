@@ -1,0 +1,32 @@
+name: Build Phase B frontend
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "frontend/**"
+      - "packaging/scripts/apply_phase_b_branding.sh"
+      - "packaging/scripts/bootstrap_frontend.sh"
+      - "packaging/scripts/build_frontend.sh"
+      - "input-method/**"
+
+jobs:
+  build:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Bootstrap + brand
+        run: bash packaging/scripts/bootstrap_frontend.sh
+
+      - name: Build frontend
+        run: bash packaging/scripts/build_frontend.sh
+
+      - name: Package preview
+        run: ASC_PHASE_B=1 bash packaging/scripts/build_preview_app.sh
+
+      - name: Upload AppleSuCheng.app
+        uses: actions/upload-artifact@v4
+        with:
+          name: AppleSuCheng-phase-b
+          path: dist.noindex/AppleSuCheng.app

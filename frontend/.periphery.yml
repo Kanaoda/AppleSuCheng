@@ -1,0 +1,6 @@
+project: AppleSuCheng.xcodeproj
+schemes:
+- AppleSuCheng
+targets:
+- AppleSuCheng
+format: github-actions

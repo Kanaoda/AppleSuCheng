@@ -1,0 +1,21 @@
+#!/bin/bash
+set -e
+
+login_user=`/usr/bin/stat -f%Su /dev/console`
+AppleSuCheng_app_root="${DSTROOT}/AppleSuCheng.app"
+AppleSuCheng_executable="${AppleSuCheng_app_root}/Contents/MacOS/AppleSuCheng"
+rime_package_installer="${AppleSuCheng_app_root}/Contents/MacOS/rime-install"
+rime_shared_data_path="${AppleSuCheng_app_root}/Contents/SharedSupport"
+
+/usr/bin/sudo -u "${login_user}" /usr/bin/killall AppleSuCheng > /dev/null || true
+
+"${AppleSuCheng_executable}" --register-input-source
+
+if [ -z "${RIME_NO_PREBUILD}" ]; then
+    pushd "${rime_shared_data_path}" > /dev/null
+    "${AppleSuCheng_executable}" --build
+    popd > /dev/null
+fi && (
+    /usr/bin/sudo -u "${login_user}" "${AppleSuCheng_executable}" --enable-input-source
+    /usr/bin/sudo -u "${login_user}" "${AppleSuCheng_executable}" --select-input-source
+)

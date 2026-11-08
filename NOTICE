@@ -1,0 +1,14 @@
+Apple SuCheng / 蘋果速成
+Copyright (c) Kanaoda
+
+Product schema, Lua, themes, icons, and packaging scripts under this repository
+root (outside `frontend/`) are provided by Kanaoda unless noted otherwise.
+
+The `frontend/` directory contains a GPL-3.0 fork of the Rime project's official
+macOS InputMethodKit front-end. That component remains GPL-3.0; see
+`frontend/LICENSE.txt` and `frontend/UPSTREAM.md`. When you distribute the
+compiled input method application, you must comply with GPL-3.0 for that
+front-end (including corresponding source offers as required).
+
+librime and related libraries have their own licenses; see bundled notices
+inside the application where applicable.

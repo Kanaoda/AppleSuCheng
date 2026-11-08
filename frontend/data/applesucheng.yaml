@@ -1,0 +1,49 @@
+# 蘋果速成前端設定（config_open("applesucheng")）
+# encoding: utf-8
+
+config_version: '0.1'
+
+show_notifications_when: appropriate
+
+style:
+  color_scheme: win10_classic
+  color_scheme_dark: win10_classic
+  candidate_list_layout: stacked
+  text_orientation: horizontal
+  inline_preedit: true
+  inline_candidate: false
+  corner_radius: 0
+  hilited_corner_radius: 0
+  border_height: 1
+  border_width: 1
+  line_spacing: 6
+  spacing: 4
+  shadow_size: 0
+  show_paging: true
+  candidate_format: "[label]\u2002\u2002\u2002[candidate]\u3000\u2002[comment]"
+  font_face: "PingFangTC-Regular"
+  font_point: 17
+  label_font_face: "ArialMT"
+  label_font_point: 15
+  comment_font_face: "PingFangTC-Regular"
+  comment_font_point: 12
+
+preset_color_schemes:
+  win10_classic:
+    name: "Windows 速成風格"
+    back_color: 0xF3F3F3
+    border_color: 0x8C8C8C
+    text_color: 0x000000
+    hilited_text_color: 0x000000
+    hilited_back_color: 0xF3F3F3
+    candidate_text_color: 0x000000
+    label_color: 0x595959
+    comment_text_color: 0x595959
+    hilited_candidate_back_color: 0xD4D4D4
+    hilited_candidate_text_color: 0x000000
+    hilited_candidate_label_color: 0x000000
+    hilited_comment_text_color: 0x595959
+
+app_options:
+  com.apple.Terminal:
+    ascii_mode: false

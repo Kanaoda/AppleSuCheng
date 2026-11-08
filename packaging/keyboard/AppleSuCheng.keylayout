@@ -1,0 +1,288 @@
+<?xml version="1.1" encoding="UTF-8"?>
+<!DOCTYPE keyboard SYSTEM "file://localhost/System/Library/DTDs/KeyboardLayout.dtd">
+<keyboard group="126" id="-19427" name="AppleSuCheng" maxout="2">
+	<layouts>
+		<layout first="0" last="17" mapSet="su" modifiers="mod"/>
+		<layout first="18" last="18" mapSet="su" modifiers="mod"/>
+		<layout first="21" last="23" mapSet="su" modifiers="mod"/>
+		<layout first="30" last="30" mapSet="su" modifiers="mod"/>
+		<layout first="194" last="194" mapSet="su" modifiers="mod"/>
+		<layout first="197" last="197" mapSet="su" modifiers="mod"/>
+		<layout first="200" last="201" mapSet="su" modifiers="mod"/>
+		<layout first="206" last="207" mapSet="su" modifiers="mod"/>
+	</layouts>
+	<modifierMap id="mod" defaultIndex="0">
+		<keyMapSelect mapIndex="0">
+			<modifier keys=""/>
+			<modifier keys="anyShift? caps? command"/>
+			<modifier keys="caps"/>
+			<modifier keys="anyShift caps"/>
+		</keyMapSelect>
+		<keyMapSelect mapIndex="1">
+			<modifier keys="anyShift"/>
+			<modifier keys="caps"/>
+		</keyMapSelect>
+	</modifierMap>
+	<keyMapSet id="su">
+		<keyMap index="0">
+			<key code="0" output="日"/>
+			<key code="1" output="尸"/>
+			<key code="2" output="木"/>
+			<key code="3" output="火"/>
+			<key code="4" output="竹"/>
+			<key code="5" output="土"/>
+			<key code="6" output="重"/>
+			<key code="7" output="難"/>
+			<key code="8" output="金"/>
+			<key code="9" output="女"/>
+			<key code="10" output=""/>
+			<key code="11" output="月"/>
+			<key code="12" output="手"/>
+			<key code="13" output="田"/>
+			<key code="14" output="水"/>
+			<key code="15" output="口"/>
+			<key code="16" output="卜"/>
+			<key code="17" output="廿"/>
+			<key code="18" output="1"/>
+			<key code="19" output="2"/>
+			<key code="20" output="3"/>
+			<key code="21" output="4"/>
+			<key code="22" output="6"/>
+			<key code="23" output="5"/>
+			<key code="24" output="="/>
+			<key code="25" output="9"/>
+			<key code="26" output="7"/>
+			<key code="27" output="-"/>
+			<key code="28" output="8"/>
+			<key code="29" output="0"/>
+			<key code="30" output="」"/>
+			<key code="31" output="人"/>
+			<key code="32" output="山"/>
+			<key code="33" output="「"/>
+			<key code="34" output="戈"/>
+			<key code="35" output="心"/>
+			<key code="36" output=""/>
+			<key code="37" output="中"/>
+			<key code="38" output="十"/>
+			<key code="39" output="'"/>
+			<key code="40" output="大"/>
+			<key code="41" output=";"/>
+			<key code="42" output="、"/>
+			<key code="43" output=","/>
+			<key code="44" output="/"/>
+			<key code="45" output="弓"/>
+			<key code="46" output="一"/>
+			<key code="47" output="。"/>
+			<key code="48" output=""/>
+			<key code="49" output=" "/>
+			<key code="50" output=""/>
+			<key code="51" output=""/>
+			<key code="52" output=""/>
+			<key code="53" output=""/>
+			<key code="54" output=""/>
+			<key code="55" output=""/>
+			<key code="56" output=""/>
+			<key code="57" output=""/>
+			<key code="58" output=""/>
+			<key code="59" output=""/>
+			<key code="60" output=""/>
+			<key code="61" output=""/>
+			<key code="62" output=""/>
+			<key code="63" output=""/>
+			<key code="64" output=""/>
+			<key code="65" output=""/>
+			<key code="66" output=""/>
+			<key code="67" output=""/>
+			<key code="68" output=""/>
+			<key code="69" output=""/>
+			<key code="70" output=""/>
+			<key code="71" output=""/>
+			<key code="72" output=""/>
+			<key code="73" output=""/>
+			<key code="74" output=""/>
+			<key code="75" output=""/>
+			<key code="76" output=""/>
+			<key code="77" output=""/>
+			<key code="78" output=""/>
+			<key code="79" output=""/>
+			<key code="80" output=""/>
+			<key code="81" output=""/>
+			<key code="82" output=""/>
+			<key code="83" output=""/>
+			<key code="84" output=""/>
+			<key code="85" output=""/>
+			<key code="86" output=""/>
+			<key code="87" output=""/>
+			<key code="88" output=""/>
+			<key code="89" output=""/>
+			<key code="90" output=""/>
+			<key code="91" output=""/>
+			<key code="92" output=""/>
+			<key code="93" output=""/>
+			<key code="94" output=""/>
+			<key code="95" output=""/>
+			<key code="96" output=""/>
+			<key code="97" output=""/>
+			<key code="98" output=""/>
+			<key code="99" output=""/>
+			<key code="100" output=""/>
+			<key code="101" output=""/>
+			<key code="102" output=""/>
+			<key code="103" output=""/>
+			<key code="104" output=""/>
+			<key code="105" output=""/>
+			<key code="106" output=""/>
+			<key code="107" output=""/>
+			<key code="108" output=""/>
+			<key code="109" output=""/>
+			<key code="110" output=""/>
+			<key code="111" output=""/>
+			<key code="112" output=""/>
+			<key code="113" output=""/>
+			<key code="114" output=""/>
+			<key code="115" output=""/>
+			<key code="116" output=""/>
+			<key code="117" output=""/>
+			<key code="118" output=""/>
+			<key code="119" output=""/>
+			<key code="120" output=""/>
+			<key code="121" output=""/>
+			<key code="122" output=""/>
+			<key code="123" output=""/>
+			<key code="124" output=""/>
+			<key code="125" output=""/>
+			<key code="126" output=""/>
+			<key code="127" output=""/>
+		</keyMap>
+		<keyMap index="1">
+			<key code="0" output="日"/>
+			<key code="1" output="尸"/>
+			<key code="2" output="木"/>
+			<key code="3" output="火"/>
+			<key code="4" output="竹"/>
+			<key code="5" output="土"/>
+			<key code="6" output="重"/>
+			<key code="7" output="難"/>
+			<key code="8" output="金"/>
+			<key code="9" output="女"/>
+			<key code="10" output=""/>
+			<key code="11" output="月"/>
+			<key code="12" output="手"/>
+			<key code="13" output="田"/>
+			<key code="14" output="水"/>
+			<key code="15" output="口"/>
+			<key code="16" output="卜"/>
+			<key code="17" output="廿"/>
+			<key code="18" output="1"/>
+			<key code="19" output="2"/>
+			<key code="20" output="3"/>
+			<key code="21" output="4"/>
+			<key code="22" output="6"/>
+			<key code="23" output="5"/>
+			<key code="24" output="="/>
+			<key code="25" output="9"/>
+			<key code="26" output="7"/>
+			<key code="27" output="-"/>
+			<key code="28" output="8"/>
+			<key code="29" output="0"/>
+			<key code="30" output="」"/>
+			<key code="31" output="人"/>
+			<key code="32" output="山"/>
+			<key code="33" output="「"/>
+			<key code="34" output="戈"/>
+			<key code="35" output="心"/>
+			<key code="36" output=""/>
+			<key code="37" output="中"/>
+			<key code="38" output="十"/>
+			<key code="39" output="'"/>
+			<key code="40" output="大"/>
+			<key code="41" output=";"/>
+			<key code="42" output="、"/>
+			<key code="43" output=","/>
+			<key code="44" output="/"/>
+			<key code="45" output="弓"/>
+			<key code="46" output="一"/>
+			<key code="47" output="。"/>
+			<key code="48" output=""/>
+			<key code="49" output=" "/>
+			<key code="50" output=""/>
+			<key code="51" output=""/>
+			<key code="52" output=""/>
+			<key code="53" output=""/>
+			<key code="54" output=""/>
+			<key code="55" output=""/>
+			<key code="56" output=""/>
+			<key code="57" output=""/>
+			<key code="58" output=""/>
+			<key code="59" output=""/>
+			<key code="60" output=""/>
+			<key code="61" output=""/>
+			<key code="62" output=""/>
+			<key code="63" output=""/>
+			<key code="64" output=""/>
+			<key code="65" output=""/>
+			<key code="66" output=""/>
+			<key code="67" output=""/>
+			<key code="68" output=""/>
+			<key code="69" output=""/>
+			<key code="70" output=""/>
+			<key code="71" output=""/>
+			<key code="72" output=""/>
+			<key code="73" output=""/>
+			<key code="74" output=""/>
+			<key code="75" output=""/>
+			<key code="76" output=""/>
+			<key code="77" output=""/>
+			<key code="78" output=""/>
+			<key code="79" output=""/>
+			<key code="80" output=""/>
+			<key code="81" output=""/>
+			<key code="82" output=""/>
+			<key code="83" output=""/>
+			<key code="84" output=""/>
+			<key code="85" output=""/>
+			<key code="86" output=""/>
+			<key code="87" output=""/>
+			<key code="88" output=""/>
+			<key code="89" output=""/>
+			<key code="90" output=""/>
+			<key code="91" output=""/>
+			<key code="92" output=""/>
+			<key code="93" output=""/>
+			<key code="94" output=""/>
+			<key code="95" output=""/>
+			<key code="96" output=""/>
+			<key code="97" output=""/>
+			<key code="98" output=""/>
+			<key code="99" output=""/>
+			<key code="100" output=""/>
+			<key code="101" output=""/>
+			<key code="102" output=""/>
+			<key code="103" output=""/>
+			<key code="104" output=""/>
+			<key code="105" output=""/>
+			<key code="106" output=""/>
+			<key code="107" output=""/>
+			<key code="108" output=""/>
+			<key code="109" output=""/>
+			<key code="110" output=""/>
+			<key code="111" output=""/>
+			<key code="112" output=""/>
+			<key code="113" output=""/>
+			<key code="114" output=""/>
+			<key code="115" output=""/>
+			<key code="116" output=""/>
+			<key code="117" output=""/>
+			<key code="118" output=""/>
+			<key code="119" output=""/>
+			<key code="120" output=""/>
+			<key code="121" output=""/>
+			<key code="122" output=""/>
+			<key code="123" output=""/>
+			<key code="124" output=""/>
+			<key code="125" output=""/>
+			<key code="126" output=""/>
+			<key code="127" output=""/>
+		</keyMap>
+	</keyMapSet>
+</keyboard>

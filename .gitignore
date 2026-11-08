@@ -1,0 +1,42 @@
+.DS_Store
+dist/
+*.log
+key_debug.log
+**/build/
+.idea/
+.vscode/
+*.user.yaml
+installation.yaml
+
+# 階段 A：GPL 引擎二進位快取（勿提交）
+vendor/engine/
+
+# 階段 B：本機編譯產物與上游快取／大型依賴
+build/
+frontend-upstream/
+frontend/librime/
+frontend/plum/
+frontend/Sparkle/
+frontend/download/
+frontend/build/
+frontend/DerivedData/
+frontend/lib/
+frontend/bin/
+frontend/Frameworks/
+frontend/**/*.app
+
+# 開發過程廢圖（勿提交）
+website/assets/kb_crop_*.png
+website/assets/native_kb/
+website/assets/sucheng_check.png
+website/assets/sucheng_preview.png
+website/assets/sucheng_plate_*.png
+website/assets/rime_16.png
+website/assets/rime_32.png
+website/assets/AppIcon.iconset/
+website/assets/su_template_*.png
+website/assets/sucheng_own_template.tiff
+website/assets/sucheng_system_template.tiff
+dist.noindex/
+build.noindex/
+frontend/build.noindex/

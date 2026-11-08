@@ -7,18 +7,8 @@ ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 APP="$ROOT/dist.noindex/AppleSuCheng.app"
 DEST="/Library/Input Methods/AppleSuCheng.app"
 OLD_DEST="/Library/Input Methods/AppleSuChengIM.app"
-# 歷史上游安裝路徑（若仍存在則清掉）；勿設成 DEST 本身
 OLD_UPSTREAM_IME=""
-# 預設回滾來源：桌面 hybrid 備份（若存在）
 ROLLBACK="${ASC_ROLLBACK_APP:-}"
-if [[ -z "$ROLLBACK" ]]; then
-  for cand in \
-    "$HOME/Desktop/AppleSuCheng-backup-20261108-0330-hybrid-working/DO-NOT-REGISTER.noindex/AppleSuCheng.app" \
-    "$HOME/Desktop"/AppleSuCheng-backup-*-hybrid-working/DO-NOT-REGISTER.noindex/AppleSuCheng.app
-  do
-    if [[ -f "$cand/Contents/Info.plist" ]]; then ROLLBACK="$cand"; break; fi
-  done
-fi
 HARD=0
 for arg in "$@"; do
   case "$arg" in
@@ -111,7 +101,7 @@ do shell script "killall AppleSuCheng 2>/dev/null || true; rm -rf '$DEST' '$SYS_
 EOF
     echo "==> restored backup; please re-select Apple SuCheng." >&2
   else
-    echo "no ASC_ROLLBACK_APP / Desktop hybrid backup; restore manually." >&2
+    echo "no ASC_ROLLBACK_APP; restore manually." >&2
   fi
   exit 1
 }

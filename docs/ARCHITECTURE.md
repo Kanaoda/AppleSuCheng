@@ -1,4 +1,4 @@
-# 架構說明（為什麼不是照抄引擎目錄）
+# 架構說明
 
 蘋果速成把「產品行為」和「發行包裝」拆開：
 
@@ -6,21 +6,20 @@
 
 - `schema/`：方案與預設（`apple_sucheng`）
 - `dict/`：碼表與聯想庫
-- `lua/`：
-  - `sucheng_keys.lua`：按鍵節奏（單碼、Shift 選關聯字、空白翻頁、Shift 小寫英文）
-  - `sucheng_hint.lua`：關聯字提示、九格占位、中文預編輯維持
+- `lua/`：按鍵節奏、關聯提示、中文預編輯
 - `theme/`：選字表外觀（Windows 速成風格）
 
-這裡的檔名與模組名都是 **Apple SuCheng / Sucheng** 語意，不沿用第三方前端的目錄習慣。
+## `frontend/`＝macOS 輸入法前端（GPL-3.0）
 
-## `packaging/`＝怎麼變成 macOS 輸入法 App
+可編譯的 InputMethodKit 前端；產品 Bundle ID、主題、資料目錄見 `docs/PHASE_B.md`。
 
-預覽階段用腳本把產品資源打進可安裝的 `.app`。  
-建置基底優先順序：`ASC_ENGINE_APP` → `vendor/engine/` → 已安裝 App。  
-正式版會改為獨立前端工程，但 **輸入行為仍以 `input-method/` 為唯一來源**，避免「結果靠改別人樹狀目錄」的結構。
+## `packaging/`＝打包／安裝／Release
 
-`dist.noindex/` 為建置產物（gitignore），以 `input-method/` + 腳本為準，勿手改 dist。
+- `build_frontend.sh` → 編譯前端  
+- `build_preview_app.sh` → 灌入方案、圖示、偏好設定  
+- `install_preview.sh` → 本機開發安裝  
+- `make_release.sh` → 一般用戶 zip 安裝包  
 
-## `website/`＝給人看、給搜尋／AI 看的入口
+產物在 `dist.noindex/`（gitignore）。
 
-短介紹、作者、贊助連結（Buy Me a Coffee / GitHub Sponsors）。
+## `website/`＝專案頁與品牌素材

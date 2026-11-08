@@ -19,12 +19,10 @@ elif [[ -d "$ROOT/vendor/engine/AppleSuCheng.app" ]]; then
   SRC="$ROOT/vendor/engine/AppleSuCheng.app"
 elif [[ -d "/Library/Input Methods/AppleSuCheng.app" ]]; then
   SRC="/Library/Input Methods/AppleSuCheng.app"
-elif [[ -d "/Library/Input Methods/AppleSuCheng.app" ]]; then
-  SRC="/Library/Input Methods/AppleSuCheng.app"
 else
   echo "找不到基底引擎 App。" >&2
-  echo "階段 B：bash packaging/scripts/bootstrap_frontend.sh && bash packaging/scripts/build_frontend.sh" >&2
-  echo "階段 A：bash packaging/scripts/vendor_engine.sh 或安裝蘋果速成" >&2
+  echo "請先：bash packaging/scripts/bootstrap_frontend.sh && bash packaging/scripts/build_frontend.sh" >&2
+  echo "或設定 ASC_ENGINE_APP=…／安裝本機 AppleSuCheng.app" >&2
   exit 1
 fi
 

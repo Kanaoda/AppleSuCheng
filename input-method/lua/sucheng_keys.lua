@@ -6,7 +6,7 @@
 --   Space          → 循環翻關聯字頁
 --   Esc／Backspace → 關閉關聯字（吞鍵，不傳給前景 App）
 --   普通選字：→展開、←收起
---   關聯字：Shift+→展開、Shift+←收起；純 ←／→ 移動組字游標
+--   關聯字：Shift+→展開、Shift+←收起；純 ←／→ 不關閉關聯（展開後由前端走格）
 --   純數字 1-9     → 輸入數字（不選字）
 --
 -- 注意：不再使用 ascii_composer 的 inline_ascii（會把英文黏在同一組字裡）。
@@ -177,18 +177,19 @@ local function handle_expand_keys(key, env, ctx, repr)
   end
   local prediction = is_prediction(ctx)
   if prediction then
-    -- 關聯字：只用 Shift+←／→；純方向鍵留給游標
-    if not key:shift() then
+    -- 關聯字：Shift+←／→ 展開／收起；純 ←／→ 吞掉，避免關掉關聯字選單
+    local base = tostring(repr or ""):gsub("^Shift%+", "")
+    if base ~= "Right" and base ~= "KP_Right" and base ~= "Left" and base ~= "KP_Left" then
       return nil
     end
-    local base = tostring(repr or ""):gsub("^Shift%+", "")
-    if base == "Right" or base == "KP_Right" then
-      return set_menu_expanded(env, ctx, true)
-    end
-    if base == "Left" or base == "KP_Left" then
+    if key:shift() then
+      if base == "Right" or base == "KP_Right" then
+        return set_menu_expanded(env, ctx, true)
+      end
       return set_menu_expanded(env, ctx, false)
     end
-    return nil
+    -- 收起態：純方向鍵不關閉關聯；展開態交前端走格（此處仍吞掉以免漏到 dismiss）
+    return kAccepted
   end
   -- 普通選字：純 ←／→（不要 Shift）
   if key:shift() then

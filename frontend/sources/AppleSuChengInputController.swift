@@ -255,7 +255,7 @@ final class AppleSuChengInputController: IMKInputController {
     return texts.isEmpty ? nil : (texts, comments)
   }
 
-  /// 展開表格導航。普通選字：←／→ 走欄／收起。關聯字：Shift+←／→ 收起；純 ←／→ 退出並交還游標。
+  /// 展開表格導航。普通選字：←／→ 走欄，最左 ← 收起。關聯字：←／→ 走欄，Shift+←／→ 收起。
   private func handleExpandedTableKey(keyCode: UInt16, keyChars: String?, modifiers: NSEvent.ModifierFlags) -> Bool {
     let pageSize = Self.tablePageSize
     let count = max(expandedCandidateCount, 1)
@@ -275,52 +275,30 @@ final class AppleSuChengInputController: IMKInputController {
       }
     }
 
-    if isAssociationMenu {
-      // 關聯字展開：Shift+←／→ 收起
-      if mods == [.shift] {
-        switch Int(keyCode) {
-        case kVK_LeftArrow, kVK_RightArrow:
-          rimeAPI.set_option(session, "expanded_menu", false)
-          _ = rimeAPI.highlight_candidate(session, min(row, pageSize - 1))
-          rimeUpdate()
-          return true
-        default:
-          return false
-        }
-      }
-      guard mods.isEmpty else { return false }
+    // 關聯字：Shift+←／→ 收起（展開由 Lua 在收起態處理 Shift+→）
+    if isAssociationMenu, mods == [.shift] {
       switch Int(keyCode) {
       case kVK_LeftArrow, kVK_RightArrow:
-        // 退出展開，交還 Rime 移動組字游標
         rimeAPI.set_option(session, "expanded_menu", false)
-        return false
-      case kVK_UpArrow:
-        if row > 0 { moveExpandedFocus(to: expandedFocusIndex - 1) }
-        return true
-      case kVK_DownArrow:
-        if row + 1 < pageSize && expandedFocusIndex + 1 < expandedCandidateCount {
-          moveExpandedFocus(to: expandedFocusIndex + 1)
-        }
-        return true
-      case kVK_Return, kVK_ANSI_KeypadEnter:
-        return selectCandidate(expandedFocusIndex)
-      case kVK_Space:
-        let nextCol = (col + 1) % columns
-        moveExpandedFocus(to: min(nextCol * pageSize + row, expandedCandidateCount - 1))
+        _ = rimeAPI.highlight_candidate(session, min(row, pageSize - 1))
+        rimeUpdate()
         return true
       default:
         return false
       }
     }
 
-    // 普通選字展開：純 ←／→ 走欄；最左欄 ← 收起
     guard mods.isEmpty else { return false }
+
     switch Int(keyCode) {
     case kVK_LeftArrow:
       if col == 0 {
-        rimeAPI.set_option(session, "expanded_menu", false)
-        _ = rimeAPI.highlight_candidate(session, min(row, pageSize - 1))
-        rimeUpdate()
+        // 普通選字：最左欄 ← 收起；關聯字：停在最左欄（收起改用 Shift+←）
+        if !isAssociationMenu {
+          rimeAPI.set_option(session, "expanded_menu", false)
+          _ = rimeAPI.highlight_candidate(session, min(row, pageSize - 1))
+          rimeUpdate()
+        }
         return true
       }
       moveExpandedFocus(to: (col - 1) * pageSize + row)

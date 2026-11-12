@@ -32,6 +32,8 @@ final class AppleSuChengInputController: IMKInputController {
   private var candidateMenuOpen = false
   /// 展開模式下面板顯示的是絕對索引列表（非單頁）。
   private var showingExpandedMenu = false
+  /// 目前選單是否為關聯字（無組字輸入）；決定 ←／→ 是否需 Shift。
+  private var isAssociationMenu = false
   /// 表格焦點（絕對索引）；數字鍵 1–9 對「焦點所在欄」生效。
   private var expandedFocusIndex = 0
   private var expandedCandidateCount = 0
@@ -253,7 +255,7 @@ final class AppleSuChengInputController: IMKInputController {
     return texts.isEmpty ? nil : (texts, comments)
   }
 
-  /// Windows 表格選字：↑↓←→ 走格；← 在最左欄時收起；1–9／Shift+1–9 選焦點欄；Enter 上屏焦點。
+  /// 展開表格導航。普通選字：←／→ 走欄／收起。關聯字：Shift+←／→ 收起；純 ←／→ 退出並交還游標。
   private func handleExpandedTableKey(keyCode: UInt16, keyChars: String?, modifiers: NSEvent.ModifierFlags) -> Bool {
     let pageSize = Self.tablePageSize
     let count = max(expandedCandidateCount, 1)
@@ -269,17 +271,50 @@ final class AppleSuChengInputController: IMKInputController {
       if let digit = Self.digitIndex(fromKeyCode: keyCode, keyChars: keyChars) {
         let absolute = col * pageSize + digit
         guard absolute < expandedCandidateCount else { return true }
-        if mods.contains(.shift) {
-          // 關聯字：Shift+數字選焦點欄
-          return selectCandidate(absolute)
-        }
-        // 轉換選字表：純數字選焦點欄；關聯字收起態本來會輸出數字，展開後改為選字。
         return selectCandidate(absolute)
       }
     }
 
-    guard mods.isEmpty else { return false }
+    if isAssociationMenu {
+      // 關聯字展開：Shift+←／→ 收起
+      if mods == [.shift] {
+        switch Int(keyCode) {
+        case kVK_LeftArrow, kVK_RightArrow:
+          rimeAPI.set_option(session, "expanded_menu", false)
+          _ = rimeAPI.highlight_candidate(session, min(row, pageSize - 1))
+          rimeUpdate()
+          return true
+        default:
+          return false
+        }
+      }
+      guard mods.isEmpty else { return false }
+      switch Int(keyCode) {
+      case kVK_LeftArrow, kVK_RightArrow:
+        // 退出展開，交還 Rime 移動組字游標
+        rimeAPI.set_option(session, "expanded_menu", false)
+        return false
+      case kVK_UpArrow:
+        if row > 0 { moveExpandedFocus(to: expandedFocusIndex - 1) }
+        return true
+      case kVK_DownArrow:
+        if row + 1 < pageSize && expandedFocusIndex + 1 < expandedCandidateCount {
+          moveExpandedFocus(to: expandedFocusIndex + 1)
+        }
+        return true
+      case kVK_Return, kVK_ANSI_KeypadEnter:
+        return selectCandidate(expandedFocusIndex)
+      case kVK_Space:
+        let nextCol = (col + 1) % columns
+        moveExpandedFocus(to: min(nextCol * pageSize + row, expandedCandidateCount - 1))
+        return true
+      default:
+        return false
+      }
+    }
 
+    // 普通選字展開：純 ←／→ 走欄；最左欄 ← 收起
+    guard mods.isEmpty else { return false }
     switch Int(keyCode) {
     case kVK_LeftArrow:
       if col == 0 {
@@ -296,9 +331,7 @@ final class AppleSuChengInputController: IMKInputController {
       }
       return true
     case kVK_UpArrow:
-      if row > 0 {
-        moveExpandedFocus(to: expandedFocusIndex - 1)
-      }
+      if row > 0 { moveExpandedFocus(to: expandedFocusIndex - 1) }
       return true
     case kVK_DownArrow:
       if row + 1 < pageSize && expandedFocusIndex + 1 < expandedCandidateCount {
@@ -308,7 +341,6 @@ final class AppleSuChengInputController: IMKInputController {
     case kVK_Return, kVK_ANSI_KeypadEnter:
       return selectCandidate(expandedFocusIndex)
     case kVK_Space:
-      // 空白：跳到下一欄同列（類似翻頁）；末欄繞回第一欄。
       let nextCol = (col + 1) % columns
       moveExpandedFocus(to: min(nextCol * pageSize + row, expandedCandidateCount - 1))
       return true
@@ -440,6 +472,7 @@ final class AppleSuChengInputController: IMKInputController {
     showingExpandedMenu = false
     expandedCandidateCount = 0
     expandedFocusIndex = 0
+    isAssociationMenu = false
     NSApp.appleSuChengAppDelegate.panel?.hide()
     super.hidePalettes()
   }
@@ -753,6 +786,10 @@ private extension AppleSuChengInputController {
       let expanded = rimeAPI.get_option(session, "expanded_menu")
       let wasExpanded = showingExpandedMenu
       showingExpandedMenu = false
+      // 與 lua is_prediction 對齊：無組字輸入＝關聯字選單
+      let inputPtr = rimeAPI.get_input(session)
+      let inputStr = inputPtr.map { String(cString: $0) } ?? ""
+      isAssociationMenu = inputStr.isEmpty
       if expanded, let all = loadExpandedCandidates() {
         candidates = all.texts
         comments = all.comments
@@ -797,11 +834,12 @@ private extension AppleSuChengInputController {
       let selRange = NSRange(location: start.utf16Offset(in: preedit), length: preedit.utf16.distance(from: start, to: end))
       showPanel(preedit: inlinePreedit ? "" : preedit, selRange: selRange, caretPos: caretPos.utf16Offset(in: preedit),
                 candidates: candidates, comments: comments, labels: labels, highlighted: highlighted,
-                page: page, lastPage: lastPage, expanded: showingExpandedMenu)
+                page: page, lastPage: lastPage, expanded: showingExpandedMenu, association: isAssociationMenu)
       _ = rimeAPI.free_context(&ctx)
     } else {
       candidateMenuOpen = false
       showingExpandedMenu = false
+      isAssociationMenu = false
       hidePalettes()
     }
   }
@@ -853,7 +891,7 @@ private extension AppleSuChengInputController {
   }
 
   // swiftlint:disable:next function_parameter_count
-  func showPanel(preedit: String, selRange: NSRange, caretPos: Int, candidates: [String], comments: [String], labels: [String], highlighted: Int, page: Int, lastPage: Bool, expanded: Bool = false) {
+  func showPanel(preedit: String, selRange: NSRange, caretPos: Int, candidates: [String], comments: [String], labels: [String], highlighted: Int, page: Int, lastPage: Bool, expanded: Bool = false, association: Bool = false) {
     guard let client = client else { return }
     var inputPos = NSRect()
     client.attributes(forCharacterIndex: 0, lineHeightRectangle: &inputPos)
@@ -861,7 +899,7 @@ private extension AppleSuChengInputController {
       panel.position = inputPos
       panel.inputController = self
       panel.update(preedit: preedit, selRange: selRange, caretPos: caretPos, candidates: candidates, comments: comments, labels: labels,
-                   highlighted: highlighted, page: page, lastPage: lastPage, expanded: expanded, update: true)
+                   highlighted: highlighted, page: page, lastPage: lastPage, expanded: expanded, association: association, update: true)
     }
   }
 

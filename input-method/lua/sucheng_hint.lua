@@ -1,10 +1,11 @@
 -- 蘋果速成 / Apple SuCheng · Author: Kanaoda
 -- 1) 關聯字：首選右側顯示「Shift + 數字鍵」（不要底部 prompt）
--- 2) 可展開時顯示「→展開」（收起態）；展開後提示改由面板頂列「←收起」，避免表格欄位被撐歪
+-- 2) 可展開時：普通選字「→展開」、關聯字「⇧→展開」；展開後提示改由面板頂列
 -- 3) 字表每頁固定格數（收起 9／展開 45）
 -- 4) 單碼不顯示選字表，但仍維持中文字碼預編輯（避免 void 段掉回英文 a-z）
 local HINT_SHIFT = "Shift + 數字鍵"
 local HINT_EXPAND = "→展開"
+local HINT_EXPAND_ASSOC = "⇧→展開"
 local HINT_COLLAPSE = nil  -- 展開後不塞進候選 comment，改由面板顯示
 local PAD_TEXT = "　"
 local COLLAPSED_PAGE = 9
@@ -55,15 +56,15 @@ local function page_size_for(ctx)
   return COLLAPSED_PAGE
 end
 
-local function expand_hint_for(ctx, total)
-  -- 僅在收起且超過一頁時提示「→展開」；展開後由面板頂列顯示「←收起」
+local function expand_hint_for(ctx, total, assoc)
+  -- 僅在收起且超過一頁時提示；展開後由面板頂列顯示收起提示
   if total <= COLLAPSED_PAGE then
     return nil
   end
   if ctx:get_option("expanded_menu") then
     return nil
   end
-  return HINT_EXPAND
+  return assoc and HINT_EXPAND_ASSOC or HINT_EXPAND
 end
 
 local function join_hints(...)
@@ -110,7 +111,7 @@ local function filter(input, env)
   end
 
   local n = #cands
-  local expand_hint = expand_hint_for(ctx, n)
+  local expand_hint = expand_hint_for(ctx, n, predicting)
 
   for i, cand in ipairs(cands) do
     with_preedit(cand, radical_preedit)

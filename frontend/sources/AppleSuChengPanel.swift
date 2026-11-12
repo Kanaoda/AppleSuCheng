@@ -34,6 +34,8 @@ final class AppleSuChengPanel: NSPanel {
   private var pagingUp: Bool?
   /// Windows 式表格展開：直向一欄 9 字，橫向為不同頁。
   private var expanded = false
+  /// 關聯字選單（收起提示用 Shift+←；普通選字用 ←）。
+  private var association = false
   /// 展開表所需最小文字寬（由 appendTableCandidates 寫入，供 maxTextWidth 使用）。
   private var expandedTableMinWidth: CGFloat = 0
   private static let tablePageSize = 9
@@ -162,7 +164,7 @@ final class AppleSuChengPanel: NSPanel {
   }
 
   // swiftlint:disable:next cyclomatic_complexity function_parameter_count
-  func update(preedit: String, selRange: NSRange, caretPos: Int, candidates: [String], comments: [String], labels: [String], highlighted index: Int, page: Int, lastPage: Bool, expanded: Bool = false, update: Bool) {
+  func update(preedit: String, selRange: NSRange, caretPos: Int, candidates: [String], comments: [String], labels: [String], highlighted index: Int, page: Int, lastPage: Bool, expanded: Bool = false, association: Bool = false, update: Bool) {
     if update {
       self.preedit = preedit
       self.selRange = selRange
@@ -174,6 +176,7 @@ final class AppleSuChengPanel: NSPanel {
       self.page = page
       self.lastPage = lastPage
       self.expanded = expanded
+      self.association = association
     }
     cursorIndex = index
 
@@ -221,7 +224,8 @@ final class AppleSuChengPanel: NSPanel {
       let hintStyle = NSMutableParagraphStyle()
       hintStyle.paragraphSpacing = 0
       hintStyle.paragraphSpacingBefore = 0
-      let hint = NSMutableAttributedString(string: "←收起", attributes: theme.commentAttrs)
+      let collapseHint = self.association ? "⇧←收起" : "←收起"
+      let hint = NSMutableAttributedString(string: collapseHint, attributes: theme.commentAttrs)
       hint.addAttribute(.paragraphStyle, value: hintStyle, range: NSRange(location: 0, length: hint.length))
       text.append(hint)
       text.append(NSAttributedString(string: "\n", attributes: theme.attrs))

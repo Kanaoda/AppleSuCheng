@@ -5,7 +5,8 @@
 --   按住 Shift+1-9 → 選關聯字
 --   Space          → 循環翻關聯字頁
 --   Esc／Backspace → 關閉關聯字（吞鍵，不傳給前景 App）
---   選字／關聯時 →展開、←收起（對齊 Windows 表格展開）
+--   普通選字：→展開、←收起
+--   關聯字：Shift+→展開、Shift+←收起；純 ←／→ 移動組字游標
 --   純數字 1-9     → 輸入數字（不選字）
 --
 -- 注意：不再使用 ascii_composer 的 inline_ascii（會把英文黏在同一組字裡）。
@@ -168,10 +169,29 @@ local function collapse_menu_if_needed(env, ctx)
 end
 
 local function handle_expand_keys(key, env, ctx, repr)
-  if key:release() or key:shift() or key:ctrl() or key:alt() or key:super() then
+  if key:release() or key:ctrl() or key:alt() or key:super() then
     return nil
   end
   if not ctx:has_menu() then
+    return nil
+  end
+  local prediction = is_prediction(ctx)
+  if prediction then
+    -- 關聯字：只用 Shift+←／→；純方向鍵留給游標
+    if not key:shift() then
+      return nil
+    end
+    local base = tostring(repr or ""):gsub("^Shift%+", "")
+    if base == "Right" or base == "KP_Right" then
+      return set_menu_expanded(env, ctx, true)
+    end
+    if base == "Left" or base == "KP_Left" then
+      return set_menu_expanded(env, ctx, false)
+    end
+    return nil
+  end
+  -- 普通選字：純 ←／→（不要 Shift）
+  if key:shift() then
     return nil
   end
   if repr == "Right" or repr == "KP_Right" then
@@ -411,7 +431,7 @@ local function processor(key, env)
 
   if key:release() then return kNoop end
 
-  -- 選字／關聯：→展開、←收起（展開後方向鍵／數字改由前端表格導航）
+  -- 普通選字 ←／→；關聯字 Shift+←／→（展開後表格導航由前端處理）
   local expand_result = handle_expand_keys(key, env, ctx, repr)
   if expand_result ~= nil then
     return expand_result

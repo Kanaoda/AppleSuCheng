@@ -1,4 +1,5 @@
-# 蘋果速成前端設定（config_open("applesucheng")）
+# 蘋果速成前端設定
+# 注意（階段 A）：執行檔仍讀取此檔名；階段 B 會在原始碼層更名。
 # encoding: utf-8
 
 config_version: '0.1'

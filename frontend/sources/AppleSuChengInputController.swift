@@ -5,6 +5,7 @@
 //  Created by Leo Liu on 5/7/24.
 //
 
+import Carbon
 import InputMethodKit
 
 final class AppleSuChengInputController: IMKInputController {
@@ -27,6 +28,8 @@ final class AppleSuChengInputController: IMKInputController {
   private var chordTimer: Timer?
   private var chordDuration: TimeInterval = 0
   private var currentApp: String = ""
+  /// 候選／關聯字選單是否開著（以 rimeUpdate 為準，不依賴 NSPanel.isVisible）。
+  private var candidateMenuOpen = false
 
   // swiftlint:disable:next cyclomatic_complexity
   override func handle(_ event: NSEvent!, client sender: Any!) -> Bool {
@@ -105,15 +108,45 @@ final class AppleSuChengInputController: IMKInputController {
          (capitalModifiers && !code.isLetter) || (!capitalModifiers && !code.isASCII) {
         keyChars = event.characters
       }
-      if let char = keyChars?.first {
-        let rimeKeycode = AppleSuChengKeycode.osxKeycodeToRime(keycode: keyCode, keychar: char,
-                                                           shift: modifiers.contains(.shift),
-                                                           caps: modifiers.contains(.capsLock))
-        if rimeKeycode != 0 {
-          let rimeModifiers = AppleSuChengKeycode.osxModifiersToRime(modifiers: modifiers)
-          handled = processKey(rimeKeycode, modifiers: rimeModifiers)
-          rimeUpdate()
+      // Esc／方向鍵等可能沒有 characters；仍必須用 keyCode 送給 Rime，否則會漏給前景 App。
+      let rimeKeycode = AppleSuChengKeycode.osxKeycodeToRime(
+        keycode: keyCode,
+        keychar: keyChars?.first,
+        shift: modifiers.contains(.shift),
+        caps: modifiers.contains(.capsLock)
+      )
+      // 必須在 processKey／rimeUpdate 之前判斷：Rime 關閉關聯後 candidates／panel 已空，事後再查會漏吞。
+      let isEscape = keyCode == UInt16(kVK_Escape)
+      let swallowEscape = isEscape && shouldSwallowEscape()
+      if isEscape {
+        traceEscape(
+          "down menu=\(candidateMenuOpen) panel=\(NSApp.appleSuChengAppDelegate.panel?.isVisible == true) " +
+          "swallow=\(swallowEscape) rimeKey=\(rimeKeycode) app=\(currentApp)"
+        )
+      }
+      if rimeKeycode != 0 && rimeKeycode != UInt32(XK_VoidSymbol) {
+        let rimeModifiers = AppleSuChengKeycode.osxModifiersToRime(modifiers: modifiers)
+        handled = processKey(rimeKeycode, modifiers: rimeModifiers)
+        rimeUpdate()
+      } else if swallowEscape {
+        _ = processKey(UInt32(XK_Escape), modifiers: 0)
+        rimeUpdate()
+        handled = true
+      }
+
+      // 關聯字／選字面板顯示中按 Esc：一律吞掉，避免觸發編輯器或其他 App 的 Esc。
+      if swallowEscape {
+        hidePalettes()
+        candidateMenuOpen = false
+        // 清掉標記文字，避免部分 App 在「無組字」狀態下又自行解讀 Esc。
+        if let client = client {
+          client.setMarkedText("", selectionRange: NSRange(location: 0, length: 0), replacementRange: .empty)
         }
+        preedit = ""
+        handled = true
+      }
+      if isEscape {
+        traceEscape("result handled=\(handled) menuNow=\(candidateMenuOpen)")
       }
 
     default:
@@ -121,6 +154,44 @@ final class AppleSuChengInputController: IMKInputController {
     }
 
     return handled
+  }
+
+  /// 選字／關聯面板開著，或 Rime 仍在組字時，Esc 應由輸入法吃掉。
+  private func shouldSwallowEscape() -> Bool {
+    if candidateMenuOpen {
+      return true
+    }
+    if let panel = NSApp.appleSuChengAppDelegate.panel, panel.isVisible || panel.hasCandidateList {
+      return true
+    }
+    if !preedit.isEmpty {
+      return true
+    }
+    var ctx = RimeContext_stdbool.rimeStructInit()
+    defer { _ = rimeAPI.free_context(&ctx) }
+    guard session != 0, rimeAPI.get_context(session, &ctx) else { return false }
+    if ctx.menu.num_candidates > 0 {
+      return true
+    }
+    if let raw = ctx.composition.preedit, raw.pointee != 0 {
+      return true
+    }
+    return false
+  }
+
+  private func traceEscape(_ message: String) {
+    let path = (NSHomeDirectory() as NSString).appendingPathComponent("Library/AppleSuCheng/esc_trace.log")
+    let line = "\(ISO8601DateFormatter().string(from: Date())) \(message)\n"
+    if let data = line.data(using: .utf8) {
+      if FileManager.default.fileExists(atPath: path),
+         let handle = try? FileHandle(forWritingTo: URL(fileURLWithPath: path)) {
+        defer { try? handle.close() }
+        _ = try? handle.seekToEnd()
+        try? handle.write(contentsOf: data)
+      } else {
+        try? data.write(to: URL(fileURLWithPath: path), options: .atomic)
+      }
+    }
   }
 
   func selectCandidate(_ index: Int) -> Bool {
@@ -225,6 +296,7 @@ final class AppleSuChengInputController: IMKInputController {
   }
 
   override func hidePalettes() {
+    candidateMenuOpen = false
     NSApp.appleSuChengAppDelegate.panel?.hide()
     super.hidePalettes()
   }
@@ -528,6 +600,11 @@ private extension AppleSuChengInputController {
       }
 
       let numCandidates = Int(ctx.menu.num_candidates)
+      candidateMenuOpen = numCandidates > 0
+      // 關聯字常無 preedit；塞入零寬標記讓 TSM 維持組字態，Esc 才會先進輸入法。
+      if numCandidates > 0 && preedit.isEmpty && self.preedit.isEmpty {
+        show(preedit: "\u{200B}", selRange: NSRange(location: 0, length: 1), caretPos: 0)
+      }
       var candidates = [String]()
       var comments = [String]()
       for i in 0..<numCandidates {
@@ -555,6 +632,7 @@ private extension AppleSuChengInputController {
                 page: page, lastPage: lastPage)
       _ = rimeAPI.free_context(&ctx)
     } else {
+      candidateMenuOpen = false
       hidePalettes()
     }
   }

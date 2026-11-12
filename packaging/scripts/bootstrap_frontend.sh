@@ -69,7 +69,7 @@ no_download= bash -c '
   tar --bzip2 -xf "rime-deps-${rime_git_hash}-macOS-universal.tar.bz2"
   tar -xJf "Sparkle-${sparkle_version}.tar.xz"
   cd ..
-  mkdir -p librime/share Frameworks
+  mkdir -p librime/share Frameworks lib bin
   cp -R download/dist librime/
   cp -R download/share/opencc librime/share/
   cp -R download/Sparkle.framework Frameworks/

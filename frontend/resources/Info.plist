@@ -15,7 +15,7 @@
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
-	<string>Apple SuCheng</string>
+	<string>AppleSuCheng</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleSignature</key>
@@ -28,8 +28,6 @@
 		<dict>
 			<key>com.applesucheng.inputmethod.SuCheng.Hant</key>
 			<dict>
-				<key>TISDoubleSpaceSubstitution</key>
-				<string>。</string>
 				<key>TISIconLabels</key>
 				<dict>
 					<key>Primary</key>
@@ -39,10 +37,14 @@
 				<string>com.applesucheng.inputmethod.SuCheng.Hant</string>
 				<key>TISIntendedLanguage</key>
 				<string>zh-Hant</string>
+				<key>tsInputModeAlternateMenuIconFileKey</key>
+				<string>sucheng.tiff</string>
 				<key>tsInputModeCharacterRepertoireKey</key>
 				<array>
 					<string>Hant</string>
 				</array>
+				<key>tsInputModeDefaultStateKey</key>
+				<true/>
 				<key>tsInputModeIsVisibleKey</key>
 				<true/>
 				<key>tsInputModeKeyEquivalentKey</key>
@@ -54,7 +56,7 @@
 				<key>tsInputModePaletteIconFileKey</key>
 				<string>sucheng.tiff</string>
 				<key>tsInputModePrimaryInScriptKey</key>
-				<false/>
+				<true/>
 				<key>tsInputModeScriptKey</key>
 				<string>smTradChinese</string>
 			</dict>

@@ -63,6 +63,10 @@ final class AppleSuChengPanel: NSPanel {
   var inlineCandidate: Bool {
     view.currentTheme.inlineCandidate
   }
+  /// 面板上是否仍有候選／關聯字（比 isVisible 可靠；狀態訊息視窗不算）。
+  var hasCandidateList: Bool {
+    !candidates.isEmpty
+  }
 
   // swiftlint:disable:next cyclomatic_complexity
   override func sendEvent(_ event: NSEvent) {

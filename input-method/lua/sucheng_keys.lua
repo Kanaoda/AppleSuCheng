@@ -4,6 +4,7 @@
 --   按住 Shift+字母 → 中文模式下輸出小寫英文（不上屏到組字緩衝）
 --   按住 Shift+1-9 → 選關聯字
 --   Space          → 循環翻關聯字頁
+--   Esc／Backspace → 關閉關聯字（吞鍵，不傳給前景 App）
 --   純數字 1-9     → 輸入數字（不選字）
 --
 -- 注意：不再使用 ascii_composer 的 inline_ascii（會把英文黏在同一組字裡）。
@@ -17,7 +18,7 @@ local RADICALS = {
 }
 
 local DEBUG = false
-local DEBUG_LOG = (os.getenv("HOME") or "") .. "/Library/Rime/key_debug.log"
+local DEBUG_LOG = (os.getenv("HOME") or "") .. "/Library/AppleSuCheng/key_debug.log"
 
 local function dbg(msg)
   if not DEBUG then return end
@@ -381,8 +382,12 @@ local function processor(key, env)
       repr, tostring(key:shift())
     ))
 
+    -- 關閉關聯字並吞掉按鍵，避免 Esc／Backspace 漏給文字編輯器／其他 App
     if repr == "BackSpace" or repr == "Escape" then
-      return kNoop
+      dbg("dismiss prediction via " .. repr)
+      dismiss_prediction(ctx)
+      restore_prediction(ctx)
+      return kAccepted
     end
 
     if env._pred_select and repr:match("^[1-9]$") then

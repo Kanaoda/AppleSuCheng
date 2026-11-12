@@ -2,8 +2,8 @@
 
 | 項 | 值 |
 |----|-----|
-| Bundle ID | `com.applesucheng.inputmethod` |
-| 輸入模式 | `com.applesucheng.inputmethod.Hant`（僅繁中） |
+| Bundle ID | `com.applesucheng.inputmethod.SuCheng` |
+| 輸入模式 | `com.applesucheng.inputmethod.SuCheng.Hant`（僅繁中） |
 | 使用者目錄 | `~/Library/AppleSuCheng` |
 | 主題檔 | `SharedSupport/applesucheng.yaml` |
 | 連線名 | `AppleSuCheng_Connection` |

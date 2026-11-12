@@ -30,6 +30,13 @@ final class AppleSuChengInputController: IMKInputController {
   private var currentApp: String = ""
   /// 候選／關聯字選單是否開著（以 rimeUpdate 為準，不依賴 NSPanel.isVisible）。
   private var candidateMenuOpen = false
+  /// 展開模式下面板顯示的是絕對索引列表（非單頁）。
+  private var showingExpandedMenu = false
+  /// 表格焦點（絕對索引）；數字鍵 1–9 對「焦點所在欄」生效。
+  private var expandedFocusIndex = 0
+  private var expandedCandidateCount = 0
+  private static let expandedCandidateLimit = 45
+  private static let tablePageSize = 9
 
   // swiftlint:disable:next cyclomatic_complexity
   override func handle(_ event: NSEvent!, client sender: Any!) -> Bool {
@@ -124,6 +131,16 @@ final class AppleSuChengInputController: IMKInputController {
           "swallow=\(swallowEscape) rimeKey=\(rimeKeycode) app=\(currentApp)"
         )
       }
+
+      // 展開表格：方向鍵走格、1–9 選焦點欄（對齊 Windows），勿先丟給 Rime。
+      if !isEscape,
+         session != 0,
+         rimeAPI.get_option(session, "expanded_menu"),
+         handleExpandedTableKey(keyCode: keyCode, keyChars: keyChars, modifiers: modifiers) {
+        handled = true
+        break
+      }
+
       if rimeKeycode != 0 && rimeKeycode != UInt32(XK_VoidSymbol) {
         let rimeModifiers = AppleSuChengKeycode.osxModifiersToRime(modifiers: modifiers)
         handled = processKey(rimeKeycode, modifiers: rimeModifiers)
@@ -195,11 +212,134 @@ final class AppleSuChengInputController: IMKInputController {
   }
 
   func selectCandidate(_ index: Int) -> Bool {
-    let success = rimeAPI.select_candidate_on_current_page(session, index)
+    let success: Bool
+    if showingExpandedMenu || rimeAPI.get_option(session, "expanded_menu") {
+      expandedFocusIndex = index
+      success = rimeAPI.select_candidate(session, index)
+    } else {
+      success = rimeAPI.select_candidate_on_current_page(session, index)
+    }
     if success {
       rimeUpdate()
     }
     return success
+  }
+
+  /// 滑鼠移到表格某一格時，同步焦點欄（讓隨後的 1–9 選對欄）。
+  func noteExpandedFocus(_ index: Int) {
+    guard showingExpandedMenu, index >= 0, index < expandedCandidateCount else { return }
+    expandedFocusIndex = index
+    _ = rimeAPI.highlight_candidate(session, index)
+  }
+
+  /// librime 無法在執行期改 page_size；展開時用 candidate_list 一次取出多頁候選。
+  private func loadExpandedCandidates() -> (texts: [String], comments: [String])? {
+    var iterator = RimeCandidateListIterator()
+    guard rimeAPI.candidate_list_begin(session, &iterator) else {
+      return nil
+    }
+    defer { rimeAPI.candidate_list_end(&iterator) }
+
+    var texts = [String]()
+    var comments = [String]()
+    while texts.count < Self.expandedCandidateLimit && rimeAPI.candidate_list_next(&iterator) {
+      let text = iterator.candidate.text.map { String(cString: $0) } ?? ""
+      if text.isEmpty || text == "　" {
+        continue
+      }
+      texts.append(text)
+      comments.append(iterator.candidate.comment.map { String(cString: $0) } ?? "")
+    }
+    return texts.isEmpty ? nil : (texts, comments)
+  }
+
+  /// Windows 表格選字：↑↓←→ 走格；← 在最左欄時收起；1–9／Shift+1–9 選焦點欄；Enter 上屏焦點。
+  private func handleExpandedTableKey(keyCode: UInt16, keyChars: String?, modifiers: NSEvent.ModifierFlags) -> Bool {
+    let pageSize = Self.tablePageSize
+    let count = max(expandedCandidateCount, 1)
+    if expandedFocusIndex >= count {
+      expandedFocusIndex = count - 1
+    }
+    let col = expandedFocusIndex / pageSize
+    let row = expandedFocusIndex % pageSize
+    let columns = max(1, (expandedCandidateCount + pageSize - 1) / pageSize)
+    let mods = modifiers.intersection([.shift, .control, .option, .command])
+
+    if mods.isEmpty || mods == [.shift] {
+      if let digit = Self.digitIndex(fromKeyCode: keyCode, keyChars: keyChars) {
+        let absolute = col * pageSize + digit
+        guard absolute < expandedCandidateCount else { return true }
+        if mods.contains(.shift) {
+          // 關聯字：Shift+數字選焦點欄
+          return selectCandidate(absolute)
+        }
+        // 轉換選字表：純數字選焦點欄；關聯字收起態本來會輸出數字，展開後改為選字。
+        return selectCandidate(absolute)
+      }
+    }
+
+    guard mods.isEmpty else { return false }
+
+    switch Int(keyCode) {
+    case kVK_LeftArrow:
+      if col == 0 {
+        rimeAPI.set_option(session, "expanded_menu", false)
+        _ = rimeAPI.highlight_candidate(session, min(row, pageSize - 1))
+        rimeUpdate()
+        return true
+      }
+      moveExpandedFocus(to: (col - 1) * pageSize + row)
+      return true
+    case kVK_RightArrow:
+      if col + 1 < columns {
+        moveExpandedFocus(to: min((col + 1) * pageSize + row, expandedCandidateCount - 1))
+      }
+      return true
+    case kVK_UpArrow:
+      if row > 0 {
+        moveExpandedFocus(to: expandedFocusIndex - 1)
+      }
+      return true
+    case kVK_DownArrow:
+      if row + 1 < pageSize && expandedFocusIndex + 1 < expandedCandidateCount {
+        moveExpandedFocus(to: expandedFocusIndex + 1)
+      }
+      return true
+    case kVK_Return, kVK_ANSI_KeypadEnter:
+      return selectCandidate(expandedFocusIndex)
+    case kVK_Space:
+      // 空白：跳到下一欄同列（類似翻頁）；末欄繞回第一欄。
+      let nextCol = (col + 1) % columns
+      moveExpandedFocus(to: min(nextCol * pageSize + row, expandedCandidateCount - 1))
+      return true
+    default:
+      return false
+    }
+  }
+
+  private func moveExpandedFocus(to index: Int) {
+    guard expandedCandidateCount > 0 else { return }
+    expandedFocusIndex = max(0, min(index, expandedCandidateCount - 1))
+    _ = rimeAPI.highlight_candidate(session, expandedFocusIndex)
+    rimeUpdate()
+  }
+
+  private static func digitIndex(fromKeyCode keyCode: UInt16, keyChars: String?) -> Int? {
+    if let ch = keyChars?.first, ch >= "1", ch <= "9" {
+      return Int(ch.asciiValue! - Character("1").asciiValue!)
+    }
+    switch Int(keyCode) {
+    case kVK_ANSI_1, kVK_ANSI_Keypad1: return 0
+    case kVK_ANSI_2, kVK_ANSI_Keypad2: return 1
+    case kVK_ANSI_3, kVK_ANSI_Keypad3: return 2
+    case kVK_ANSI_4, kVK_ANSI_Keypad4: return 3
+    case kVK_ANSI_5, kVK_ANSI_Keypad5: return 4
+    case kVK_ANSI_6, kVK_ANSI_Keypad6: return 5
+    case kVK_ANSI_7, kVK_ANSI_Keypad7: return 6
+    case kVK_ANSI_8, kVK_ANSI_Keypad8: return 7
+    case kVK_ANSI_9, kVK_ANSI_Keypad9: return 8
+    default: return nil
+    }
   }
 
   // swiftlint:disable:next identifier_name
@@ -297,6 +437,9 @@ final class AppleSuChengInputController: IMKInputController {
 
   override func hidePalettes() {
     candidateMenuOpen = false
+    showingExpandedMenu = false
+    expandedCandidateCount = 0
+    expandedFocusIndex = 0
     NSApp.appleSuChengAppDelegate.panel?.hide()
     super.hidePalettes()
   }
@@ -599,40 +742,66 @@ private extension AppleSuChengInputController {
         }
       }
 
-      let numCandidates = Int(ctx.menu.num_candidates)
-      candidateMenuOpen = numCandidates > 0
-      // 關聯字常無 preedit；塞入零寬標記讓 TSM 維持組字態，Esc 才會先進輸入法。
-      if numCandidates > 0 && preedit.isEmpty && self.preedit.isEmpty {
-        show(preedit: "\u{200B}", selRange: NSRange(location: 0, length: 1), caretPos: 0)
-      }
+      let pageSize = max(Int(ctx.menu.page_size), 1)
+      let pageNo = Int(ctx.menu.page_no)
+      var highlighted = Int(ctx.menu.highlighted_candidate_index)
+      var page = pageNo
+      var lastPage = ctx.menu.is_last_page
+
       var candidates = [String]()
       var comments = [String]()
-      for i in 0..<numCandidates {
-        let candidate = ctx.menu.candidates[i]
-        candidates.append(candidate.text.map { String(cString: $0) } ?? "")
-        comments.append(candidate.comment.map { String(cString: $0) } ?? "")
+      let expanded = rimeAPI.get_option(session, "expanded_menu")
+      let wasExpanded = showingExpandedMenu
+      showingExpandedMenu = false
+      if expanded, let all = loadExpandedCandidates() {
+        candidates = all.texts
+        comments = all.comments
+        showingExpandedMenu = true
+        expandedCandidateCount = candidates.count
+        if !wasExpanded {
+          expandedFocusIndex = 0
+        } else {
+          expandedFocusIndex = min(expandedFocusIndex, max(candidates.count - 1, 0))
+        }
+        highlighted = expandedFocusIndex
+        _ = rimeAPI.highlight_candidate(session, expandedFocusIndex)
+        page = 0
+        lastPage = true
+      } else {
+        expandedCandidateCount = 0
+        let numCandidates = Int(ctx.menu.num_candidates)
+        for i in 0..<numCandidates {
+          let candidate = ctx.menu.candidates[i]
+          candidates.append(candidate.text.map { String(cString: $0) } ?? "")
+          comments.append(candidate.comment.map { String(cString: $0) } ?? "")
+        }
       }
+
+      candidateMenuOpen = !candidates.isEmpty
+      // 關聯字常無 preedit；塞入零寬標記讓 TSM 維持組字態，Esc 才會先進輸入法。
+      if !candidates.isEmpty && preedit.isEmpty && self.preedit.isEmpty {
+        show(preedit: "\u{200B}", selRange: NSRange(location: 0, length: 1), caretPos: 0)
+      }
+
       var labels = [String]()
       // swiftlint:disable identifier_name
       if let select_keys = ctx.menu.select_keys {
         labels = String(cString: select_keys).map { String($0) }
       } else if let select_labels = ctx.select_labels {
-        let pageSize = Int(ctx.menu.page_size)
         for i in 0..<pageSize {
           labels.append(select_labels[i].map { String(cString: $0) } ?? "")
         }
       }
       // swiftlint:enable identifier_name
-      let page = Int(ctx.menu.page_no)
-      let lastPage = ctx.menu.is_last_page
 
       let selRange = NSRange(location: start.utf16Offset(in: preedit), length: preedit.utf16.distance(from: start, to: end))
       showPanel(preedit: inlinePreedit ? "" : preedit, selRange: selRange, caretPos: caretPos.utf16Offset(in: preedit),
-                candidates: candidates, comments: comments, labels: labels, highlighted: Int(ctx.menu.highlighted_candidate_index),
-                page: page, lastPage: lastPage)
+                candidates: candidates, comments: comments, labels: labels, highlighted: highlighted,
+                page: page, lastPage: lastPage, expanded: showingExpandedMenu)
       _ = rimeAPI.free_context(&ctx)
     } else {
       candidateMenuOpen = false
+      showingExpandedMenu = false
       hidePalettes()
     }
   }
@@ -684,7 +853,7 @@ private extension AppleSuChengInputController {
   }
 
   // swiftlint:disable:next function_parameter_count
-  func showPanel(preedit: String, selRange: NSRange, caretPos: Int, candidates: [String], comments: [String], labels: [String], highlighted: Int, page: Int, lastPage: Bool) {
+  func showPanel(preedit: String, selRange: NSRange, caretPos: Int, candidates: [String], comments: [String], labels: [String], highlighted: Int, page: Int, lastPage: Bool, expanded: Bool = false) {
     guard let client = client else { return }
     var inputPos = NSRect()
     client.attributes(forCharacterIndex: 0, lineHeightRectangle: &inputPos)
@@ -692,7 +861,7 @@ private extension AppleSuChengInputController {
       panel.position = inputPos
       panel.inputController = self
       panel.update(preedit: preedit, selRange: selRange, caretPos: caretPos, candidates: candidates, comments: comments, labels: labels,
-                   highlighted: highlighted, page: page, lastPage: lastPage, update: true)
+                   highlighted: highlighted, page: page, lastPage: lastPage, expanded: expanded, update: true)
     }
   }
 

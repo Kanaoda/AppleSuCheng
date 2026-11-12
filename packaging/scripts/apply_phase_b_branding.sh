@@ -12,7 +12,8 @@ MODE_HANT="${BUNDLE_ID}.Hant"
 USER_DIR_NAME="AppleSuCheng"
 APP_NAME="AppleSuCheng"
 UI_YAML="applesucheng.yaml"
-CONN="AppleSuCheng_Connection"
+# 必須與 Bundle ID 對齊：IMK 實際註冊的是 `{bundleId}_Connection`
+CONN="${BUNDLE_ID}_Connection"
 
 echo "==> 階段 B 品牌：$BUNDLE_ID / ~/$USER_DIR_NAME / $UI_YAML"
 

@@ -32,6 +32,11 @@ final class AppleSuChengPanel: NSPanel {
   private var page: Int = 0
   private var lastPage: Bool = true
   private var pagingUp: Bool?
+  /// Windows 式表格展開：直向一欄 9 字，橫向為不同頁。
+  private var expanded = false
+  /// 展開表所需最小文字寬（由 appendTableCandidates 寫入，供 maxTextWidth 使用）。
+  private var expandedTableMinWidth: CGFloat = 0
+  private static let tablePageSize = 9
 
   init(position: NSRect) {
     self.position = position
@@ -110,6 +115,9 @@ final class AppleSuChengPanel: NSPanel {
     case .mouseMoved:
       let (index, _, _) = view.click(at: mousePosition())
       if let index = index, cursorIndex != index && index >= 0 && index < candidates.count {
+        if expanded {
+          inputController?.noteExpandedFocus(index)
+        }
         update(preedit: preedit, selRange: selRange, caretPos: caretPos, candidates: candidates, comments: comments, labels: labels, highlighted: index, page: page, lastPage: lastPage, update: false)
       }
     case .scrollWheel:
@@ -154,7 +162,7 @@ final class AppleSuChengPanel: NSPanel {
   }
 
   // swiftlint:disable:next cyclomatic_complexity function_parameter_count
-  func update(preedit: String, selRange: NSRange, caretPos: Int, candidates: [String], comments: [String], labels: [String], highlighted index: Int, page: Int, lastPage: Bool, update: Bool) {
+  func update(preedit: String, selRange: NSRange, caretPos: Int, candidates: [String], comments: [String], labels: [String], highlighted index: Int, page: Int, lastPage: Bool, expanded: Bool = false, update: Bool) {
     if update {
       self.preedit = preedit
       self.selRange = selRange
@@ -165,6 +173,7 @@ final class AppleSuChengPanel: NSPanel {
       self.index = index
       self.page = page
       self.lastPage = lastPage
+      self.expanded = expanded
     }
     cursorIndex = index
 
@@ -207,75 +216,24 @@ final class AppleSuChengPanel: NSPanel {
       highlightedPreeditRange = .empty
     }
 
-    var candidateRanges = [NSRange]()
-    for i in 0..<candidates.count {
-      let attrs = i == index ? theme.highlightedAttrs : theme.attrs
-      let labelAttrs = i == index ? theme.labelHighlightedAttrs : theme.labelAttrs
-      var commentAttrs = i == index ? theme.commentHighlightedAttrs : theme.commentAttrs
+    if self.expanded && !candidates.isEmpty {
+      // 頂列提示，不塞進第一格，避免欄位錯位
+      let hintStyle = NSMutableParagraphStyle()
+      hintStyle.paragraphSpacing = 0
+      hintStyle.paragraphSpacingBefore = 0
+      let hint = NSMutableAttributedString(string: "←收起", attributes: theme.commentAttrs)
+      hint.addAttribute(.paragraphStyle, value: hintStyle, range: NSRange(location: 0, length: hint.length))
+      text.append(hint)
+      text.append(NSAttributedString(string: "\n", attributes: theme.attrs))
+    } else {
+      expandedTableMinWidth = 0
+    }
 
-      let label = if theme.candidateFormat.contains(/\[label\]/) {
-        if labels.count > 1 && i < labels.count {
-          labels[i]
-        } else if labels.count == 1 && i < labels.first!.count {
-          String(labels.first![labels.first!.index(labels.first!.startIndex, offsetBy: i)])
-        } else {
-          "\(i+1)"
-        }
-      } else {
-        ""
-      }
-
-      let candidate = candidates[i].precomposedStringWithCanonicalMapping
-      let comment = comments[i].precomposedStringWithCanonicalMapping
-
-      let line = NSMutableAttributedString(string: theme.candidateFormat, attributes: labelAttrs)
-      let candidateText = NSMutableAttributedString(string: candidate, attributes: attrs)
-      if candidate.count <= 5 {
-        preventLineBreaks(in: candidateText)
-      }
-      // Apply semantic accent/warning colors only for non-highlighted rows
-      if let inputController, !inputController.specialCommentIndices.isEmpty && i != index {
-        if let accent = inputController.specialCommentIndices[.commentHighlight], accent.contains(i) {
-          commentAttrs[.foregroundColor] = theme.accentCommentTextColor
-        } else if let warning = inputController.specialCommentIndices[.commentWarning], warning.contains(i) {
-          commentAttrs[.foregroundColor] = theme.warningCommentTextColor
-        }
-      }
-      let labelText = NSAttributedString(string: label, attributes: labelAttrs)
-      let commentText = NSAttributedString(string: comment, attributes: commentAttrs)
-      replace(placeholder: "[label]", in: line, with: labelText)
-      let labeledLine = line.copy() as! NSAttributedString
-      replace(placeholder: "[candidate]", in: line, with: candidateText)
-      replace(placeholder: "[comment]", in: line, with: commentText)
-
-      if line.length <= 10 {
-        preventLineBreaks(in: line)
-      }
-
-      let lineSeparator = NSAttributedString(string: linear ? "  " : "\n", attributes: attrs)
-      if i > 0 {
-        text.append(lineSeparator)
-      }
-      let str = lineSeparator.mutableCopy() as! NSMutableAttributedString
-      if vertical {
-        str.addAttribute(.verticalGlyphForm, value: 1, range: NSRange(location: 0, length: str.length))
-      }
-      view.separatorWidth = str.boundingRect(with: .zero).width
-
-      let paragraphStyleCandidate = (i == 0 ? theme.firstParagraphStyle : theme.paragraphStyle).mutableCopy() as! NSMutableParagraphStyle
-      if linear {
-        paragraphStyleCandidate.paragraphSpacingBefore -= theme.linespace
-        paragraphStyleCandidate.lineSpacing = theme.linespace
-      }
-      if !linear, let labelEnd = labeledLine.string.firstMatch(of: /\[(candidate|comment)\]/)?.range.lowerBound {
-        let labelString = labeledLine.attributedSubstring(from: NSRange(location: 0, length: labelEnd.utf16Offset(in: labeledLine.string)))
-        let labelWidth = labelString.boundingRect(with: .zero, options: [.usesLineFragmentOrigin]).width
-        paragraphStyleCandidate.headIndent = labelWidth
-      }
-      line.addAttribute(.paragraphStyle, value: paragraphStyleCandidate, range: NSRange(location: 0, length: line.length))
-
-      candidateRanges.append(NSRange(location: text.length, length: line.length))
-      text.append(line)
+    let candidateRanges: [NSRange]
+    if self.expanded {
+      candidateRanges = appendTableCandidates(to: text, highlighted: index, theme: theme)
+    } else {
+      candidateRanges = appendStackedCandidates(to: text, highlighted: index, theme: theme)
     }
 
     view.textView.textContentStorage?.attributedString = text
@@ -290,7 +248,15 @@ final class AppleSuChengPanel: NSPanel {
     // Keep very tall wrapped text from auto-scrolling past the first line.
     view.textView.scrollToBeginningOfDocument(nil)
 
-    view.drawView(candidateRanges: candidateRanges, hilightedIndex: index, preeditRange: preeditRange, highlightedPreeditRange: highlightedPreeditRange, canPageUp: page > 0, canPageDown: !lastPage)
+    view.drawView(
+      candidateRanges: candidateRanges,
+      hilightedIndex: index,
+      preeditRange: preeditRange,
+      highlightedPreeditRange: highlightedPreeditRange,
+      canPageUp: page > 0 && !self.expanded,
+      canPageDown: !lastPage && !self.expanded,
+      tightCellHighlight: self.expanded
+    )
     show()
   }
 
@@ -324,6 +290,192 @@ final class AppleSuChengPanel: NSPanel {
 }
 
 private extension AppleSuChengPanel {
+  /// 收起：直式／橫式單欄列表（既有行為）。
+  func appendStackedCandidates(to text: NSMutableAttributedString, highlighted index: Int, theme: AppleSuChengTheme) -> [NSRange] {
+    var candidateRanges = [NSRange]()
+    for i in 0..<candidates.count {
+      let (line, labeledLine) = makeCandidateLine(at: i, highlighted: index, theme: theme, includeComment: true)
+      let attrs = i == index ? theme.highlightedAttrs : theme.attrs
+      let lineSeparator = NSAttributedString(string: linear ? "  " : "\n", attributes: attrs)
+      if i > 0 {
+        text.append(lineSeparator)
+      }
+      let str = lineSeparator.mutableCopy() as! NSMutableAttributedString
+      if vertical {
+        str.addAttribute(.verticalGlyphForm, value: 1, range: NSRange(location: 0, length: str.length))
+      }
+      view.separatorWidth = str.boundingRect(with: .zero).width
+
+      let paragraphStyleCandidate = (i == 0 ? theme.firstParagraphStyle : theme.paragraphStyle).mutableCopy() as! NSMutableParagraphStyle
+      if linear {
+        paragraphStyleCandidate.paragraphSpacingBefore -= theme.linespace
+        paragraphStyleCandidate.lineSpacing = theme.linespace
+      }
+      if !linear, let labelEnd = labeledLine.string.firstMatch(of: /\[(candidate|comment)\]/)?.range.lowerBound {
+        let labelString = labeledLine.attributedSubstring(from: NSRange(location: 0, length: labelEnd.utf16Offset(in: labeledLine.string)))
+        let labelWidth = labelString.boundingRect(with: .zero, options: [.usesLineFragmentOrigin]).width
+        paragraphStyleCandidate.headIndent = labelWidth
+      }
+      line.addAttribute(.paragraphStyle, value: paragraphStyleCandidate, range: NSRange(location: 0, length: line.length))
+
+      candidateRanges.append(NSRange(location: text.length, length: line.length))
+      text.append(line)
+    }
+    return candidateRanges
+  }
+
+  /// 展開：Windows 表格——直向一欄 9 字，橫向各欄為不同頁。
+  /// 每格用 NSTextAttachment 補到固定像素寬（空白字元會被 TextKit 吃掉，不可靠）。
+  func appendTableCandidates(to text: NSMutableAttributedString, highlighted index: Int, theme: AppleSuChengTheme) -> [NSRange] {
+    let pageSize = Self.tablePageSize
+    let columns = max(1, (candidates.count + pageSize - 1) / pageSize)
+    var ranges = Array(repeating: NSRange(location: 0, length: 0), count: candidates.count)
+
+    // 先量所有「可見」儲存格（不含墊片），取最大寬當固定欄寬
+    var maxVisibleWidth: CGFloat = 0
+    for absIndex in 0..<candidates.count {
+      let row = absIndex % pageSize
+      let cell = Self.makeTableVisibleCell(
+        label: "\(row + 1)",
+        candidate: candidates[absIndex].precomposedStringWithCanonicalMapping,
+        labelAttrs: theme.labelAttrs,
+        candidateAttrs: theme.attrs
+      )
+      maxVisibleWidth = max(maxVisibleWidth, Self.measureWidth(cell))
+    }
+    let minWidth = Self.measureWidth(Self.makeTableVisibleCell(
+      label: "9", candidate: "詞詞詞", labelAttrs: theme.labelAttrs, candidateAttrs: theme.attrs
+    ))
+    let columnWidth = ceil(max(maxVisibleWidth, minWidth)) + 12
+    expandedTableMinWidth = columnWidth * CGFloat(columns)
+
+    let rowStyle = NSMutableParagraphStyle()
+    rowStyle.alignment = .left
+    rowStyle.lineBreakMode = .byClipping
+    rowStyle.lineSpacing = 0
+    rowStyle.paragraphSpacing = 0
+    rowStyle.paragraphSpacingBefore = 0
+    rowStyle.headIndent = 0
+    rowStyle.firstLineHeadIndent = 0
+    rowStyle.tailIndent = 0
+    rowStyle.tabStops = []
+    rowStyle.defaultTabInterval = 0
+
+    for row in 0..<pageSize {
+      let rowStart = text.length
+      for col in 0..<columns {
+        let absIndex = col * pageSize + row
+        let cell = NSMutableAttributedString()
+        if absIndex < candidates.count {
+          let attrs = absIndex == index ? theme.highlightedAttrs : theme.attrs
+          let labelAttrs = absIndex == index ? theme.labelHighlightedAttrs : theme.labelAttrs
+          let visible = Self.makeTableVisibleCell(
+            label: "\(row + 1)",
+            candidate: candidates[absIndex].precomposedStringWithCanonicalMapping,
+            labelAttrs: labelAttrs,
+            candidateAttrs: attrs
+          )
+          ranges[absIndex] = NSRange(location: text.length, length: visible.length)
+          cell.append(visible)
+        }
+        // 附件墊片：把此格撐到固定欄寬，下一欄起點永遠相同
+        let used = Self.measureWidth(cell)
+        let pad = max(columnWidth - used, 0)
+        cell.append(Self.fixedWidthSpacer(pad))
+        text.append(cell)
+      }
+      let rowRange = NSRange(location: rowStart, length: text.length - rowStart)
+      if rowRange.length > 0 {
+        text.addAttribute(.paragraphStyle, value: rowStyle, range: rowRange)
+      }
+      if row + 1 < pageSize {
+        text.append(NSAttributedString(string: "\n", attributes: theme.attrs))
+      }
+    }
+    return ranges
+  }
+
+  static func makeTableVisibleCell(label: String, candidate: String,
+                                   labelAttrs: [NSAttributedString.Key: Any],
+                                   candidateAttrs: [NSAttributedString.Key: Any]) -> NSAttributedString {
+    let cell = NSMutableAttributedString(string: label, attributes: labelAttrs)
+    cell.append(NSAttributedString(string: "\u{2002}", attributes: labelAttrs))
+    cell.append(NSAttributedString(string: candidate, attributes: candidateAttrs))
+    return cell
+  }
+
+  /// 不可見但佔固定寬度的墊片（TextKit 2 也不會吃掉）。
+  static func fixedWidthSpacer(_ width: CGFloat) -> NSAttributedString {
+    guard width > 0.5 else { return NSAttributedString() }
+    let attachment = NSTextAttachment()
+    attachment.image = NSImage(size: NSSize(width: width, height: 1), flipped: false) { rect in
+      NSColor.clear.setFill()
+      rect.fill()
+      return true
+    }
+    attachment.bounds = CGRect(x: 0, y: 0, width: width, height: 1)
+    return NSAttributedString(attachment: attachment)
+  }
+
+  static func measureWidth(_ attributed: NSAttributedString) -> CGFloat {
+    let huge = CGFloat.greatestFiniteMagnitude
+    return ceil(attributed.boundingRect(with: CGSize(width: huge, height: huge),
+                                        options: [.usesLineFragmentOrigin, .usesFontLeading],
+                                        context: nil).width)
+  }
+
+  func makeCandidateLine(at i: Int, highlighted index: Int, theme: AppleSuChengTheme, includeComment: Bool, tableLabel: String? = nil) -> (NSMutableAttributedString, NSAttributedString) {
+    let attrs = i == index ? theme.highlightedAttrs : theme.attrs
+    let labelAttrs = i == index ? theme.labelHighlightedAttrs : theme.labelAttrs
+    var commentAttrs = i == index ? theme.commentHighlightedAttrs : theme.commentAttrs
+
+    let label: String
+    if let tableLabel {
+      label = tableLabel
+    } else if theme.candidateFormat.contains(/\[label\]/) {
+      if labels.count > 1 && i < labels.count {
+        label = labels[i]
+      } else if labels.count == 1 && i < labels.first!.count {
+        label = String(labels.first![labels.first!.index(labels.first!.startIndex, offsetBy: i)])
+      } else {
+        label = "\(i + 1)"
+      }
+    } else {
+      label = ""
+    }
+
+    let candidate = candidates[i].precomposedStringWithCanonicalMapping
+    let comment = includeComment && i < comments.count ? comments[i].precomposedStringWithCanonicalMapping : ""
+
+    let format = includeComment ? theme.candidateFormat : "[label]\u{2002}[candidate]"
+    let line = NSMutableAttributedString(string: format, attributes: labelAttrs)
+    let candidateText = NSMutableAttributedString(string: candidate, attributes: attrs)
+    if candidate.count <= 5 {
+      preventLineBreaks(in: candidateText)
+    }
+    if includeComment, let inputController, !inputController.specialCommentIndices.isEmpty && i != index {
+      if let accent = inputController.specialCommentIndices[.commentHighlight], accent.contains(i) {
+        commentAttrs[.foregroundColor] = theme.accentCommentTextColor
+      } else if let warning = inputController.specialCommentIndices[.commentWarning], warning.contains(i) {
+        commentAttrs[.foregroundColor] = theme.warningCommentTextColor
+      }
+    }
+    let labelText = NSAttributedString(string: label, attributes: labelAttrs)
+    let commentText = NSAttributedString(string: comment, attributes: commentAttrs)
+    replace(placeholder: "[label]", in: line, with: labelText)
+    let labeledLine = line.copy() as! NSAttributedString
+    replace(placeholder: "[candidate]", in: line, with: candidateText)
+    if includeComment {
+      replace(placeholder: "[comment]", in: line, with: commentText)
+    } else {
+      replace(placeholder: "[comment]", in: line, with: NSAttributedString(string: ""))
+    }
+    if line.length <= 10 {
+      preventLineBreaks(in: line)
+    }
+    return (line, labeledLine)
+  }
+
   func mousePosition() -> NSPoint {
     var point = NSEvent.mouseLocation
     point = self.convertPoint(fromScreen: point)
@@ -342,6 +494,11 @@ private extension AppleSuChengPanel {
 
   func maxTextWidth() -> CGFloat {
     let theme = view.currentTheme
+    // 表格展開需要更寬，否則多欄／Tab 會被折行拆掉對齊。
+    if expanded {
+      let screenCap = screenRect.width * 0.92 - theme.edgeInset.width * 2
+      return max(screenCap, expandedTableMinWidth + 8)
+    }
     let font: NSFont = theme.font
     let fontScale = font.pointSize / 12
     let textWidthRatio = min(1, 1 / (vertical ? 4 : 3) + fontScale / 12)

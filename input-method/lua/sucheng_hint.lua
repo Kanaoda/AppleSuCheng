@@ -1,9 +1,14 @@
 -- 蘋果速成 / Apple SuCheng · Author: Kanaoda
 -- 1) 關聯字：首選右側顯示「Shift + 數字鍵」（不要底部 prompt）
--- 2) 字表每頁固定 9 格
--- 3) 單碼不顯示選字表，但仍維持中文字碼預編輯（避免 void 段掉回英文 a-z）
-local HINT = "Shift + 數字鍵"
+-- 2) 可展開時顯示「→展開」（收起態）；展開後提示改由面板頂列「←收起」，避免表格欄位被撐歪
+-- 3) 字表每頁固定格數（收起 9／展開 45）
+-- 4) 單碼不顯示選字表，但仍維持中文字碼預編輯（避免 void 段掉回英文 a-z）
+local HINT_SHIFT = "Shift + 數字鍵"
+local HINT_EXPAND = "→展開"
+local HINT_COLLAPSE = nil  -- 展開後不塞進候選 comment，改由面板顯示
 local PAD_TEXT = "　"
+local COLLAPSED_PAGE = 9
+local EXPANDED_PAGE = 45
 
 local RADICALS = {
   a = "日", b = "月", c = "金", d = "木", e = "水", f = "火", g = "土",
@@ -43,17 +48,46 @@ local function with_preedit(cand, preedit)
   return cand
 end
 
+local function page_size_for(ctx)
+  if ctx:get_option("expanded_menu") then
+    return EXPANDED_PAGE
+  end
+  return COLLAPSED_PAGE
+end
+
+local function expand_hint_for(ctx, total)
+  -- 僅在收起且超過一頁時提示「→展開」；展開後由面板頂列顯示「←收起」
+  if total <= COLLAPSED_PAGE then
+    return nil
+  end
+  if ctx:get_option("expanded_menu") then
+    return nil
+  end
+  return HINT_EXPAND
+end
+
+local function join_hints(...)
+  local parts = {}
+  for i = 1, select("#", ...) do
+    local p = select(i, ...)
+    if p and p ~= "" then
+      parts[#parts + 1] = p
+    end
+  end
+  return table.concat(parts, "  ")
+end
+
 local function filter(input, env)
   local ctx = env.engine.context
   local seg = ctx.composition:back()
   local predicting = is_prediction_seg(ctx, seg)
-  local page_size = env.engine.schema.page_size or 9
+  local page_size = page_size_for(ctx)
   local code = ctx.input or ""
   local radical_preedit = to_radicals(code)
 
   -- 不要底部 prompt
   if seg then
-    if seg.prompt == HINT or predicting then
+    if seg.prompt == HINT_SHIFT or seg.prompt == HINT_EXPAND or seg.prompt == HINT_COLLAPSE or predicting then
       seg.prompt = ""
     end
   end
@@ -76,12 +110,26 @@ local function filter(input, env)
   end
 
   local n = #cands
+  local expand_hint = expand_hint_for(ctx, n)
+
   for i, cand in ipairs(cands) do
     with_preedit(cand, radical_preedit)
-    if predicting and i == 1 then
-      local comment = cand.comment
-      if not comment or comment == "" or not comment:find("Shift", 1, true) then
-        yield(ShadowCandidate(cand, cand.type, cand.text, HINT))
+    if i == 1 then
+      local hint
+      if predicting then
+        hint = join_hints(HINT_SHIFT, expand_hint)
+      else
+        hint = expand_hint
+      end
+      if hint and hint ~= "" then
+        local comment = cand.comment
+        if not comment or comment == "" or not comment:find("Shift", 1, true) then
+          yield(ShadowCandidate(cand, cand.type, cand.text, hint))
+        elseif expand_hint and not comment:find("展開", 1, true) and not comment:find("收起", 1, true) then
+          yield(ShadowCandidate(cand, cand.type, cand.text, join_hints(comment, expand_hint)))
+        else
+          yield(cand)
+        end
       else
         yield(cand)
       end
@@ -93,6 +141,10 @@ local function filter(input, env)
   if n > 0 then
     local rem = n % page_size
     local pad = (rem == 0) and 0 or (page_size - rem)
+    -- 展開時不硬填滿整頁空白，避免畫面被占位字淹沒
+    if ctx:get_option("expanded_menu") then
+      pad = 0
+    end
     if pad > 0 then
       for _ = 1, pad do
         local pad_cand = Candidate("pad", start_pos, end_pos, PAD_TEXT, "")

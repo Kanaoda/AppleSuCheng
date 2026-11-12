@@ -115,14 +115,18 @@ final class AppleSuChengView: NSView {
     return NSRect(x: x0, y: y0, width: x1-x0, height: y1-y0)
   }
 
+  /// 表格展開時高亮只包住單一儲存格，不拉滿整列寬度。
+  private var tightCellHighlight = false
+
   // swiftlint:disable:next function_parameter_count
-  func drawView(candidateRanges: [NSRange], hilightedIndex: Int, preeditRange: NSRange, highlightedPreeditRange: NSRange, canPageUp: Bool, canPageDown: Bool) {
+  func drawView(candidateRanges: [NSRange], hilightedIndex: Int, preeditRange: NSRange, highlightedPreeditRange: NSRange, canPageUp: Bool, canPageDown: Bool, tightCellHighlight: Bool = false) {
     self.candidateRanges = candidateRanges
     self.hilightedIndex = hilightedIndex
     self.preeditRange = preeditRange
     self.highlightedPreeditRange = highlightedPreeditRange
     self.canPageUp = canPageUp
     self.canPageDown = canPageDown
+    self.tightCellHighlight = tightCellHighlight
     self.needsDisplay = true
   }
 
@@ -327,6 +331,7 @@ final class AppleSuChengView: NSView {
           } else {
             for i in 0..<candidateRanges.count {
               let range = candidateRanges[i]
+              guard range.length > 0 else { continue }
               if index >= range.location && index < range.upperBound {
                 candidateIndex = i
                 break
@@ -676,25 +681,39 @@ private extension AppleSuChengView {
     } else if let highlightedTextRange = convert(range: highlightedRange) {
       var highlightedRect = self.contentRect(range: highlightedTextRange)
       if !nearEmpty(highlightedRect) {
-        highlightedRect.size.width = backgroundRect.size.width
-        highlightedRect.size.height += theme.linespace
-        highlightedRect.origin = NSPoint(x: backgroundRect.origin.x, y: highlightedRect.origin.y + theme.edgeInset.height - halfLinespace)
-        if highlightedRange.upperBound == (textView.string as NSString).length {
-          highlightedRect.size.height += theme.edgeInset.height - halfLinespace
-        }
-        if highlightedRange.location - (preeditRange == .empty ? 0 : preeditRange.upperBound) <= 1 {
-          if preeditRange.length == 0 {
+        if tightCellHighlight {
+          // 表格儲存格：只包住該字，左右略留白。
+          let padX: CGFloat = 4
+          let padY: CGFloat = max(2, theme.linespace / 2)
+          highlightedRect = NSRect(
+            x: highlightedRect.origin.x - padX,
+            y: highlightedRect.origin.y + theme.edgeInset.height - padY,
+            width: highlightedRect.size.width + padX * 2,
+            height: highlightedRect.size.height + padY * 2
+          )
+        } else {
+          highlightedRect.size.width = backgroundRect.size.width
+          highlightedRect.size.height += theme.linespace
+          highlightedRect.origin = NSPoint(x: backgroundRect.origin.x, y: highlightedRect.origin.y + theme.edgeInset.height - halfLinespace)
+          if highlightedRange.upperBound == (textView.string as NSString).length {
             highlightedRect.size.height += theme.edgeInset.height - halfLinespace
-            highlightedRect.origin.y -= theme.edgeInset.height - halfLinespace
-          } else {
-            highlightedRect.size.height += theme.hilitedCornerRadius / 2
-            highlightedRect.origin.y -= theme.hilitedCornerRadius / 2
+          }
+          if highlightedRange.location - (preeditRange == .empty ? 0 : preeditRange.upperBound) <= 1 {
+            if preeditRange.length == 0 {
+              highlightedRect.size.height += theme.edgeInset.height - halfLinespace
+              highlightedRect.origin.y -= theme.edgeInset.height - halfLinespace
+            } else {
+              highlightedRect.size.height += theme.hilitedCornerRadius / 2
+              highlightedRect.origin.y -= theme.hilitedCornerRadius / 2
+            }
           }
         }
 
         var highlightedPoints = rectVertex(of: highlightedRect)
         highlightedPoints = enlarge(vertex: highlightedPoints, by: extraExpansion)
-        highlightedPoints = expand(vertex: highlightedPoints, innerBorder: innerBox, outerBorder: outerBox)
+        if !tightCellHighlight {
+          highlightedPoints = expand(vertex: highlightedPoints, innerBorder: innerBox, outerBorder: outerBox)
+        }
         resultingPath = drawSmoothLines(highlightedPoints, straightCorner: Set(), alpha: effectiveRadius*0.3, beta: effectiveRadius*1.4)?.mutableCopy()
       } else {
         resultingPath = nil

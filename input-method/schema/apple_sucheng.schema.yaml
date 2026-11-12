@@ -20,6 +20,9 @@ switches:
     states: [ 漢字, 汉字 ]
   - name: prediction
     reset: 1
+  # 選字／關聯展開（←／→）；無 states，不跳狀態列提示
+  - name: expanded_menu
+    reset: 0
 
 engine:
   processors:

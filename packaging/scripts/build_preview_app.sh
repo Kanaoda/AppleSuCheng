@@ -79,14 +79,15 @@ with info_path.open("rb") as f:
 
 bundle = "com.applesucheng.inputmethod.SuCheng"
 mode = f"{bundle}.Hant"
-conn = "AppleSuCheng_Connection"
+# 必須與 Bundle ID 對齊：IMK 實際註冊的是 `{bundleId}_Connection`
+conn = f"{bundle}_Connection"
 
 info["CFBundleIdentifier"] = bundle
 info["TISInputSourceID"] = bundle
 info["CFBundleName"] = "Apple SuCheng"
 info["CFBundleDisplayName"] = "蘋果速成"
 info["CFBundleExecutable"] = "AppleSuCheng"
-info["CFBundleVersion"] = "0.2.0" if phase_b else "0.1.0"
+info["CFBundleVersion"] = "0.2.2" if phase_b else "0.1.0"
 info["CFBundleShortVersionString"] = info["CFBundleVersion"]
 info["CFBundleIconFile"] = "AppIcon"
 info["CFBundleIconName"] = "AppIcon"

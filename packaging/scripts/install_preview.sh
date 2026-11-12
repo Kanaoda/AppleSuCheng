@@ -211,8 +211,23 @@ PY
 
 # 開發副本與安裝版同 ID，若被登記會讓 Fn 切換器出現重複項
 for dev in "$ROOT/dist.noindex/AppleSuCheng.app" "$ROOT/build.noindex/frontend/AppleSuCheng.app" \
-           "$ROOT/frontend/build.noindex/Build/Products/Release/AppleSuCheng.app" "$ROOT/vendor/engine/AppleSuCheng.app"; do
+           "$ROOT/frontend/build.noindex/Build/Products/Release/AppleSuCheng.app" \
+           "$ROOT/frontend/build/Build/Products/Release/AppleSuCheng.app" \
+           "$ROOT/vendor/engine/AppleSuCheng.app"; do
   [[ -e "$dev" ]] && "$LSR" -u "$dev" 2>/dev/null || true
+done
+# 再掃一次 LS：同 Bundle ID 的非 /Library 路徑一律撤銷，避免系統啟動到開發副本
+"$LSR" -dump 2>/dev/null | awk '
+  /^path:/ {
+    path=$0
+    sub(/^path:[[:space:]]*/, "", path)
+    sub(/ \(0x.*\)$/, "", path)
+  }
+  /identifier:[[:space:]]*com\.applesucheng\.inputmethod\.SuCheng$/ {
+    if (path != "" && path !~ /^\/Library\/Input Methods\/AppleSuCheng\.app$/) print path
+  }
+' | while IFS= read -r p; do
+  "$LSR" -u "$p" 2>/dev/null || true
 done
 
 # 只經由 TIS 啟用；關掉系統速成／注音；啟用後重新取清單再 Select
@@ -246,6 +261,31 @@ if let cur = TISCopyCurrentKeyboardInputSource()?.takeRetainedValue() {
   print("current \(idOf(cur))")
 }
 SWIFT
+
+# TISEnable 有時不會寫進 HIToolbox 啟用清單，會變成「已選取但未啟用」→ 只能打英文。
+# 這裡強制把蘋果速成寫入 AppleEnabledInputSources，並拿掉系統 Jianyi。
+ASC_BUNDLE_ID="$BUNDLE_ID" python3 - <<'PY' 2>/dev/null || true
+import os, plistlib, subprocess, pathlib
+bid = os.environ["ASC_BUNDLE_ID"]
+mode = f"{bid}.Hant"
+raw = subprocess.check_output(["defaults", "export", "com.apple.HIToolbox", "-"])
+data = plistlib.loads(raw)
+sucheng = {"Bundle ID": bid, "Input Mode": mode, "InputSourceKind": "Input Mode"}
+enabled = []
+for e in data.get("AppleEnabledInputSources", []):
+    b = e.get("Bundle ID", "")
+    if b.startswith("com.apple.inputmethod.TCIM") or b == bid:
+        continue
+    enabled.append(e)
+enabled.append(sucheng)
+data["AppleEnabledInputSources"] = enabled
+data["AppleSelectedInputSources"] = [sucheng]
+out = pathlib.Path("/tmp/asc-hitoolbox-install.plist")
+out.write_bytes(plistlib.dumps(data))
+subprocess.check_call(["defaults", "import", "com.apple.HIToolbox", str(out)])
+print("HIToolbox enabled +=", mode)
+PY
+killall TextInputMenuAgent TextInputSwitcher 2>/dev/null || true
 
 echo "==> installed: ${DEST}"
 echo "    bundle id: ${BUNDLE_ID}"

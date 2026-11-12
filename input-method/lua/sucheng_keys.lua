@@ -5,10 +5,14 @@
 --   按住 Shift+1-9 → 選關聯字
 --   Space          → 循環翻關聯字頁
 --   Esc／Backspace → 關閉關聯字（吞鍵，不傳給前景 App）
+--   選字／關聯時 →展開、←收起（對齊 Windows 表格展開）
 --   純數字 1-9     → 輸入數字（不選字）
 --
 -- 注意：不再使用 ascii_composer 的 inline_ascii（會把英文黏在同一組字裡）。
 local kRejected, kAccepted, kNoop = 0, 1, 2
+
+local COLLAPSED_PAGE = 9
+local EXPANDED_PAGE = 45
 
 local RADICALS = {
   a = "日", b = "月", c = "金", d = "木", e = "水", f = "火", g = "土",
@@ -101,13 +105,82 @@ local function is_prediction(ctx)
   return (not ctx.input or ctx.input == "") and ctx:is_composing()
 end
 
-local function dismiss_prediction(ctx)
+local function is_expanded(ctx)
+  return ctx:get_option("expanded_menu") == true
+end
+
+-- 注意：librime 的 schema.page_size 啟動後不可改；展開由前端 candidate_list API 一次取齊。
+-- 這裡只維護 expanded_menu option，供 hint／前端讀取。
+
+local function dismiss_prediction(ctx, env)
+  ctx:set_option("expanded_menu", false)
   ctx:set_option("prediction", false)
   ctx:clear()
 end
 
 local function restore_prediction(ctx)
   ctx:set_option("prediction", true)
+end
+
+local function page_size_of(env, ctx)
+  ctx = ctx or env.engine.context
+  if is_expanded(ctx) then
+    return EXPANDED_PAGE
+  end
+  local n = env.engine.schema.page_size
+  if type(n) == "number" and n > 0 then
+    return n
+  end
+  return COLLAPSED_PAGE
+end
+
+local function jump_to_index(ctx, seg, index)
+  if ctx.highlight then
+    ctx:highlight(index)
+  else
+    seg.selected_index = index
+    ctx:refresh_non_confirmed_composition()
+  end
+end
+
+local function set_menu_expanded(env, ctx, expanded)
+  local want = expanded and true or false
+  if is_expanded(ctx) == want then
+    return kAccepted
+  end
+  ctx:set_option("expanded_menu", want)
+  local seg = ctx.composition:back()
+  if seg then
+    -- 展開從清單開頭看；收起尽量留在同一候選附近
+    local idx = want and 0 or seg.selected_index
+    jump_to_index(ctx, seg, idx)
+  else
+    ctx:refresh_non_confirmed_composition()
+  end
+  dbg("expanded_menu=" .. tostring(want))
+  return kAccepted
+end
+
+local function collapse_menu_if_needed(env, ctx)
+  if is_expanded(ctx) then
+    ctx:set_option("expanded_menu", false)
+  end
+end
+
+local function handle_expand_keys(key, env, ctx, repr)
+  if key:release() or key:shift() or key:ctrl() or key:alt() or key:super() then
+    return nil
+  end
+  if not ctx:has_menu() then
+    return nil
+  end
+  if repr == "Right" or repr == "KP_Right" then
+    return set_menu_expanded(env, ctx, true)
+  end
+  if repr == "Left" or repr == "KP_Left" then
+    return set_menu_expanded(env, ctx, false)
+  end
+  return nil
 end
 
 local function commit_raw(env, key, repr)
@@ -132,24 +205,11 @@ local function commit_raw(env, key, repr)
   return false
 end
 
-local function page_size_of(env)
-  return env.engine.schema.page_size or 9
-end
-
-local function jump_to_index(ctx, seg, index)
-  if ctx.highlight then
-    ctx:highlight(index)
-  else
-    seg.selected_index = index
-    ctx:refresh_non_confirmed_composition()
-  end
-end
-
 local function cycle_pages(ctx, env)
   local seg = ctx.composition:back()
   if not seg or not seg.menu then return kNoop end
 
-  local page_size = page_size_of(env)
+  local page_size = page_size_of(env, ctx)
   local next_start = (math.floor(seg.selected_index / page_size) + 1) * page_size
 
   if seg.menu:prepare(next_start + 1) > next_start then
@@ -196,7 +256,7 @@ end
 local function candidate_at_page_index(ctx, env, page_index)
   local seg = ctx.composition:back()
   if not seg then return nil end
-  local page_size = page_size_of(env)
+  local page_size = page_size_of(env, ctx)
   local page_start = math.floor(seg.selected_index / page_size) * page_size
   return seg:get_candidate_at(page_start + page_index)
 end
@@ -209,7 +269,7 @@ local function select_via_commit(ctx, env, page_index)
   end
   local text = cand.text
   dbg("select_via_commit text=" .. text)
-  dismiss_prediction(ctx)
+  dismiss_prediction(ctx, env)
   env.engine:commit_text(text)
   restore_prediction(ctx)
   return true
@@ -237,7 +297,7 @@ local function flush_composition(ctx, env)
   if not ctx:is_composing() then return end
 
   if is_prediction(ctx) then
-    dismiss_prediction(ctx)
+    dismiss_prediction(ctx, env)
     restore_prediction(ctx)
     return
   end
@@ -271,7 +331,7 @@ end
 local function commit_lowercase_latin(ctx, env, letter)
   mark_shift_used(env)
   if is_prediction(ctx) then
-    dismiss_prediction(ctx)
+    dismiss_prediction(ctx, env)
     env.engine:commit_text(letter)
     restore_prediction(ctx)
     return
@@ -333,6 +393,10 @@ local function processor(key, env)
   local ctx = env.engine.context
   local repr = key:repr()
 
+  if not ctx:has_menu() then
+    collapse_menu_if_needed(env, ctx)
+  end
+
   -- 先處理 Shift 起／止（含 release）
   local shift_result = handle_shift_chord(key, env, repr)
   if shift_result ~= nil then
@@ -346,6 +410,12 @@ local function processor(key, env)
   end
 
   if key:release() then return kNoop end
+
+  -- 選字／關聯：→展開、←收起（展開後方向鍵／數字改由前端表格導航）
+  local expand_result = handle_expand_keys(key, env, ctx, repr)
+  if expand_result ~= nil then
+    return expand_result
+  end
 
   -- 中文模式：按住 Shift 打字 → 撤銷誤切換，輸出小寫英文
   local letter = shift_letter(key, repr)
@@ -385,7 +455,7 @@ local function processor(key, env)
     -- 關閉關聯字並吞掉按鍵，避免 Esc／Backspace 漏給文字編輯器／其他 App
     if repr == "BackSpace" or repr == "Escape" then
       dbg("dismiss prediction via " .. repr)
-      dismiss_prediction(ctx)
+      dismiss_prediction(ctx, env)
       restore_prediction(ctx)
       return kAccepted
     end
@@ -408,7 +478,7 @@ local function processor(key, env)
     end
 
     if repr:match("^[0-9]$") and not key:shift() and not key:ctrl() and not key:alt() then
-      dismiss_prediction(ctx)
+      dismiss_prediction(ctx, env)
       env.engine:commit_text(repr)
       restore_prediction(ctx)
       return kAccepted
@@ -419,7 +489,7 @@ local function processor(key, env)
     end
 
     dbg("dismiss other key=" .. repr)
-    dismiss_prediction(ctx)
+    dismiss_prediction(ctx, env)
     local committed = commit_raw(env, key, repr)
     restore_prediction(ctx)
     if committed then

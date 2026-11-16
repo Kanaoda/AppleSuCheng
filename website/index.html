@@ -19,6 +19,9 @@
   <meta name="twitter:description" content="Windows 速成習慣 → macOS 繁體輸入法。by Kanaoda" />
   <meta name="twitter:image" content="https://kanaoda.github.io/AppleSuCheng/assets/logo.png" />
   <link rel="icon" href="assets/logo.png" type="image/png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Outfit:wght@500;700;800&display=swap" rel="stylesheet" />
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
@@ -60,80 +63,399 @@
   }
   </script>
   <style>
-    :root { --bg:#f6f6f4; --ink:#1a1a1a; --muted:#5c5c5c; --line:#d8d8d4; --card:#fff; --accent:#222; }
+    :root {
+      --ink: #14202b;
+      --muted: #5a6876;
+      --line: rgba(20, 32, 43, 0.12);
+      --paper: #e8eef4;
+      --paper-2: #f3f6f9;
+      --accent: #0f6e6a;
+      --accent-ink: #f5fffe;
+      --shadow: 0 22px 50px rgba(20, 32, 43, 0.14);
+      --font-sans: "Noto Sans TC", "PingFang TC", sans-serif;
+      --font-display: "Outfit", "Noto Sans TC", sans-serif;
+    }
+
     * { box-sizing: border-box; }
-    body { margin:0; font-family: "PingFang TC", "Noto Sans TC", sans-serif; background:var(--bg); color:var(--ink); line-height:1.6; }
-    .wrap { max-width: 720px; margin: 0 auto; padding: 48px 20px 80px; }
-    .brand { display:flex; gap:14px; align-items:center; margin-bottom:28px; }
-    .brand img { width:56px; height:56px; border-radius:12px; border:1px solid var(--line); background:#fff; }
-    h1 { font-size: 1.8rem; margin:0 0 6px; letter-spacing:0.02em; }
-    .tag { color:var(--muted); margin:0; }
-    .card { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:22px 22px; margin:18px 0; }
-    h2 { font-size:1.05rem; margin:0 0 10px; }
-    ul { margin:0; padding-left:1.2em; }
-    .links { display:flex; flex-wrap:wrap; gap:10px; align-items:center; }
-    .links a { color:var(--accent); margin-right:0; }
-    footer { margin-top:40px; padding-top:18px; border-top:1px solid var(--line); color:var(--muted); font-size:0.92rem; }
-    footer a { color:var(--ink); text-decoration:none; border-bottom:1px solid var(--line); }
-    footer a:hover { border-bottom-color: var(--ink); }
-    .foot-links { margin:8px 0; }
-    .foot-sep { margin:0 8px; opacity:0.5; }
-    .cta { display:inline-block; margin-top:8px; padding:10px 14px; background:#111; color:#fff; border-radius:10px; text-decoration:none; }
-    .cta-secondary { display:inline-block; margin-top:8px; padding:10px 14px; background:#fff; color:#111; border:1px solid var(--line); border-radius:10px; text-decoration:none; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      font-family: var(--font-sans);
+      line-height: 1.65;
+      background:
+        radial-gradient(1000px 520px at 8% -8%, rgba(15, 110, 106, 0.16), transparent 55%),
+        radial-gradient(820px 460px at 92% 0%, rgba(47, 92, 140, 0.12), transparent 52%),
+        linear-gradient(180deg, var(--paper-2) 0%, var(--paper) 55%, #dce5ee 100%);
+      min-height: 100vh;
+    }
+
+    a { color: inherit; }
+
+    .shell {
+      width: min(1120px, calc(100% - 2.4rem));
+      margin: 0 auto;
+    }
+
+    .topnav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1.1rem 0 0.4rem;
+      opacity: 0;
+      animation: rise 0.7s ease forwards;
+    }
+
+    .topnav-brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.7rem;
+      text-decoration: none;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+    }
+
+    .topnav-brand img {
+      width: 36px;
+      height: 36px;
+      border-radius: 9px;
+      box-shadow: 0 6px 16px rgba(23, 21, 19, 0.18);
+    }
+
+    .topnav-links {
+      display: flex;
+      gap: 1.1rem;
+      font-size: 0.92rem;
+      color: var(--muted);
+    }
+
+    .topnav-links a {
+      text-decoration: none;
+      border-bottom: 1px solid transparent;
+      transition: color 0.2s ease, border-color 0.2s ease;
+    }
+
+    .topnav-links a:hover {
+      color: var(--ink);
+      border-bottom-color: var(--line);
+    }
+
+    .hero {
+      position: relative;
+      min-height: calc(100vh - 4.2rem);
+      margin: 0.6rem calc(50% - 50vw) 0;
+      width: 100vw;
+      display: grid;
+      align-items: end;
+      overflow: hidden;
+      isolation: isolate;
+    }
+
+    .hero-visual {
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+      opacity: 0;
+      animation: fadein 1.1s ease 0.05s forwards;
+    }
+
+    .hero-visual img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center 35%;
+      display: block;
+      transform: scale(1.02);
+      animation: ken 14s ease-in-out infinite alternate;
+    }
+
+    .hero-visual::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(180deg, rgba(243, 246, 249, 0.28) 0%, rgba(20, 32, 43, 0.55) 58%, rgba(20, 32, 43, 0.82) 100%);
+    }
+
+    .hero-copy {
+      position: relative;
+      z-index: 1;
+      width: min(1120px, calc(100% - 2.4rem));
+      margin: 0 auto;
+      padding: 4.5rem 0 3.2rem;
+      color: #f5f8fb;
+      opacity: 0;
+      animation: rise 0.85s ease 0.12s forwards;
+    }
+
+    .brand-mark {
+      display: flex;
+      align-items: center;
+      gap: 0.9rem;
+      margin-bottom: 1.1rem;
+    }
+
+    .brand-mark img {
+      width: 64px;
+      height: 64px;
+      border-radius: 16px;
+      box-shadow: 0 16px 36px rgba(0, 0, 0, 0.28);
+    }
+
+    .brand-name {
+      font-family: var(--font-display);
+      font-size: clamp(2.35rem, 5vw, 3.7rem);
+      line-height: 1.05;
+      letter-spacing: 0.02em;
+      margin: 0;
+      font-weight: 800;
+    }
+
+    .brand-name span {
+      display: block;
+      font-family: var(--font-sans);
+      font-size: 0.38em;
+      font-weight: 500;
+      color: rgba(245, 248, 251, 0.78);
+      letter-spacing: 0.08em;
+      margin-top: 0.4rem;
+    }
+
+    .lede {
+      font-size: clamp(1.05rem, 1.7vw, 1.22rem);
+      color: rgba(245, 248, 251, 0.86);
+      max-width: 30rem;
+      margin: 0 0 1.5rem;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 2.85rem;
+      padding: 0.7rem 1.15rem;
+      border-radius: 10px;
+      text-decoration: none;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+    }
+
+    .btn:hover { transform: translateY(-1px); }
+
+    .btn-primary {
+      background: #12a59c;
+      color: #042422 !important;
+      box-shadow: 0 12px 28px rgba(0, 0, 0, 0.25);
+    }
+
+    .btn-primary:visited,
+    .btn-primary:active,
+    .btn-primary:hover {
+      color: #042422 !important;
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.14);
+      color: #f5f8fb !important;
+      border: 1px solid rgba(255, 255, 255, 0.35);
+      backdrop-filter: blur(8px);
+    }
+
+    .btn-secondary:visited,
+    .btn-secondary:active,
+    .btn-secondary:hover {
+      color: #f5f8fb !important;
+    }
+
+    .section {
+      padding: 3.4rem 0;
+      border-top: 1px solid var(--line);
+      opacity: 0;
+      animation: rise 0.8s ease 0.35s forwards;
+    }
+
+    .section h2 {
+      font-family: var(--font-display);
+      font-size: clamp(1.45rem, 2.5vw, 1.9rem);
+      margin: 0 0 0.55rem;
+      letter-spacing: 0.02em;
+    }
+
+    .section-lead {
+      margin: 0 0 1.4rem;
+      color: var(--muted);
+      max-width: 36rem;
+    }
+
+    .split {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.6rem 2.4rem;
+    }
+
+    .point,
+    .feature {
+      padding: 0.2rem 0;
+    }
+
+    .point strong,
+    .feature strong {
+      display: block;
+      margin-bottom: 0.25rem;
+      font-size: 1.02rem;
+    }
+
+    .point p,
+    .feature p {
+      margin: 0;
+      color: var(--muted);
+    }
+
+    footer {
+      padding: 2.2rem 0 3.4rem;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 0.94rem;
+    }
+
+    .foot-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.85rem;
+      margin: 0.7rem 0 1rem;
+    }
+
+    .foot-links a {
+      text-decoration: none;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .foot-links a:hover { border-bottom-color: var(--ink); color: var(--ink); }
+
+    @keyframes rise {
+      from { opacity: 0; transform: translateY(14px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes fadein {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    @keyframes ken {
+      from { transform: scale(1.02) translateY(0); }
+      to { transform: scale(1.07) translateY(-1.5%); }
+    }
+
+    @media (max-width: 860px) {
+      .hero { min-height: 78vh; }
+      .split { grid-template-columns: 1fr; }
+      .topnav-links { display: none; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation: none !important;
+        transition: none !important;
+      }
+      .hero-copy, .hero-visual, .section, .topnav { opacity: 1; }
+      .hero-visual img { animation: none; transform: none; }
+    }
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <header class="brand">
-      <img src="assets/logo.png" width="56" height="56" alt="蘋果速成 Apple SuCheng" />
-      <div>
-        <h1>蘋果速成 / Apple SuCheng</h1>
-        <p class="tag">Windows 速成習慣 → macOS 繁體輸入法 · by Kanaoda</p>
+  <div class="shell">
+    <nav class="topnav" aria-label="導覽">
+      <a class="topnav-brand" href="./">
+        <img src="assets/logo.png" width="36" height="36" alt="" />
+        蘋果速成
+      </a>
+      <div class="topnav-links">
+        <a href="https://github.com/Kanaoda/AppleSuCheng">倉庫</a>
+        <a href="https://github.com/Kanaoda/AppleSuCheng/releases">Releases</a>
+        <a href="https://github.com/Kanaoda">Kanaoda</a>
+      </div>
+    </nav>
+
+    <header class="hero">
+      <div class="hero-visual" aria-hidden="true">
+        <img src="assets/keyboard_preview.png" width="960" height="640" alt="" />
+      </div>
+      <div class="hero-copy">
+        <div class="brand-mark">
+          <img src="assets/logo.png" width="64" height="64" alt="蘋果速成標誌" />
+          <h1 class="brand-name">蘋果速成<span>Apple SuCheng · by Kanaoda</span></h1>
+        </div>
+        <p class="lede">把 Windows 速成的打字節奏搬到 Mac，讓轉場少一點痛苦。</p>
+        <div class="actions">
+          <a class="btn btn-primary" href="https://github.com/Kanaoda/AppleSuCheng/releases">下載 Releases</a>
+          <a class="btn btn-secondary" href="https://github.com/Kanaoda/AppleSuCheng">GitHub 倉庫</a>
+        </div>
       </div>
     </header>
 
-    <section class="card">
-      <h2>一句話</h2>
-      <p>把 Windows 速成的打字節奏搬到 Mac，讓轉場少一點痛苦。</p>
-      <p class="links">
-        <a class="cta" href="https://github.com/Kanaoda/AppleSuCheng/releases">下載 Releases</a>
-        <a class="cta-secondary" href="https://github.com/Kanaoda/AppleSuCheng">GitHub 倉庫</a>
-      </p>
+    <section class="section" aria-labelledby="pain-title">
+      <h2 id="pain-title">你會對上這些痛點嗎？</h2>
+      <p class="section-lead">從 Windows 換成 Mac，最痛的往往不是系統，而是輸入法手感斷了。</p>
+      <div class="split">
+        <div class="point">
+          <strong>手感不一樣</strong>
+          <p>Windows 速成用很順，Mac 內建節奏對不起來。</p>
+        </div>
+        <div class="point">
+          <strong>單碼被打斷</strong>
+          <p>單碼還要開選字表，打字節奏斷掉。</p>
+        </div>
+        <div class="point">
+          <strong>關聯字習慣</strong>
+          <p>想用 Shift＋數字選字，系統行為對不上。</p>
+        </div>
+        <div class="point">
+          <strong>想看部件</strong>
+          <p>字碼要「日月金木」，不要一排英文。</p>
+        </div>
+      </div>
     </section>
 
-    <section class="card">
-      <h2>你會對上這些痛點嗎？</h2>
-      <ul>
-        <li>Windows 速成用很順，Mac 內建手感不一樣</li>
-        <li>單碼還要開選字表，節奏被打斷</li>
-        <li>關聯字想用 Shift＋數字，系統行為對不起來</li>
-        <li>字碼想看「日月金木」，不要一排英文</li>
-      </ul>
-    </section>
-
-    <section class="card">
-      <h2>蘋果速成提供</h2>
-      <ul>
-        <li>單碼直出、兩碼選字</li>
-        <li>關聯字：Shift + 數字選、空白鍵翻頁</li>
-        <li>中文部件預編輯</li>
-        <li>接近 Windows 的字表視覺</li>
-      </ul>
+    <section class="section" aria-labelledby="offer-title">
+      <h2 id="offer-title">蘋果速成提供</h2>
+      <p class="section-lead">專為「Windows 速成 → Mac」打造，對齊你原本的肌肉記憶。</p>
+      <div class="split">
+        <div class="feature">
+          <strong>單碼直出、兩碼選字</strong>
+          <p>單碼不上選字表，空白鍵上屏。</p>
+        </div>
+        <div class="feature">
+          <strong>關聯字</strong>
+          <p>Shift + 數字選、空白鍵翻頁。</p>
+        </div>
+        <div class="feature">
+          <strong>中文部件預編輯</strong>
+          <p>顯示日月金木，而不是 abcd。</p>
+        </div>
+        <div class="feature">
+          <strong>接近 Windows 的字表</strong>
+          <p>直式九格，展開後一次看更多字。</p>
+        </div>
+      </div>
     </section>
 
     <footer>
       <p>© 2026 <strong>Kanaoda</strong> · 蘋果速成 / Apple SuCheng</p>
-      <p class="foot-links">
+      <div class="foot-links">
         <a href="https://github.com/Kanaoda/AppleSuCheng" target="_blank" rel="noopener noreferrer">GitHub</a>
-        <span class="foot-sep" aria-hidden="true">·</span>
         <a href="https://github.com/Kanaoda/AppleSuCheng/releases" target="_blank" rel="noopener noreferrer">Releases</a>
-        <span class="foot-sep" aria-hidden="true">·</span>
         <a href="https://buymeacoffee.com/kanaoda" target="_blank" rel="noopener noreferrer">Buy Me a Coffee</a>
-        <span class="foot-sep" aria-hidden="true">·</span>
         <a href="https://github.com/sponsors/Kanaoda" target="_blank" rel="noopener noreferrer">GitHub Sponsors</a>
-        <span class="foot-sep" aria-hidden="true">·</span>
         <a href="https://payme.hsbc/kanaoda" target="_blank" rel="noopener noreferrer">PayMe</a>
-      </p>
+      </div>
       <p>喜歡的話，歡迎支持這個專案，讓更多 Windows→Mac 用家找得到順手的速成。</p>
     </footer>
   </div>

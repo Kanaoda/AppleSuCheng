@@ -7,10 +7,58 @@
   <meta name="description" content="蘋果速成（Apple SuCheng）深度複刻 Windows 傳統速成使用習慣，給從 Windows 轉到 Mac 的繁體中文用家。Sucheng / Quick IME for macOS by Kanaoda." />
   <meta name="keywords" content="蘋果速成,Apple SuCheng,macOS 速成,Mac 速成輸入法,Windows 速成 Mac,Sucheng,Traditional Chinese IME,Kanaoda" />
   <meta name="author" content="Kanaoda" />
+  <link rel="canonical" href="https://kanaoda.github.io/AppleSuCheng/" />
   <meta property="og:title" content="蘋果速成 / Apple SuCheng" />
   <meta property="og:description" content="把 Windows 速成的打字節奏搬到 Mac。Author: Kanaoda" />
   <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://kanaoda.github.io/AppleSuCheng/" />
+  <meta property="og:image" content="https://kanaoda.github.io/AppleSuCheng/assets/logo.png" />
+  <meta property="og:locale" content="zh_HK" />
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:title" content="蘋果速成 / Apple SuCheng" />
+  <meta name="twitter:description" content="Windows 速成習慣 → macOS 繁體輸入法。by Kanaoda" />
+  <meta name="twitter:image" content="https://kanaoda.github.io/AppleSuCheng/assets/logo.png" />
   <link rel="icon" href="assets/logo.png" type="image/png" />
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "WebSite",
+        "name": "蘋果速成 Apple SuCheng",
+        "url": "https://kanaoda.github.io/AppleSuCheng/",
+        "description": "Windows 速成習慣的 macOS 繁體中文輸入法",
+        "inLanguage": "zh-Hant",
+        "author": {
+          "@type": "Person",
+          "name": "Kanaoda",
+          "url": "https://github.com/Kanaoda"
+        }
+      },
+      {
+        "@type": "SoftwareApplication",
+        "name": "蘋果速成",
+        "alternateName": ["Apple SuCheng", "AppleSuCheng"],
+        "applicationCategory": "UtilitiesApplication",
+        "operatingSystem": "macOS",
+        "description": "把 Windows 傳統速成的打字節奏搬到 Mac 的繁體中文輸入法。",
+        "url": "https://kanaoda.github.io/AppleSuCheng/",
+        "downloadUrl": "https://github.com/Kanaoda/AppleSuCheng/releases",
+        "codeRepository": "https://github.com/Kanaoda/AppleSuCheng",
+        "author": {
+          "@type": "Person",
+          "name": "Kanaoda",
+          "url": "https://github.com/Kanaoda"
+        },
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "USD"
+        }
+      }
+    ]
+  }
+  </script>
   <style>
     :root { --bg:#f6f6f4; --ink:#1a1a1a; --muted:#5c5c5c; --line:#d8d8d4; --card:#fff; --accent:#222; }
     * { box-sizing: border-box; }
@@ -23,19 +71,21 @@
     .card { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:22px 22px; margin:18px 0; }
     h2 { font-size:1.05rem; margin:0 0 10px; }
     ul { margin:0; padding-left:1.2em; }
-    .links a { color:var(--accent); margin-right:14px; }
+    .links { display:flex; flex-wrap:wrap; gap:10px; align-items:center; }
+    .links a { color:var(--accent); margin-right:0; }
     footer { margin-top:40px; padding-top:18px; border-top:1px solid var(--line); color:var(--muted); font-size:0.92rem; }
     footer a { color:var(--ink); text-decoration:none; border-bottom:1px solid var(--line); }
     footer a:hover { border-bottom-color: var(--ink); }
     .foot-links { margin:8px 0; }
     .foot-sep { margin:0 8px; opacity:0.5; }
     .cta { display:inline-block; margin-top:8px; padding:10px 14px; background:#111; color:#fff; border-radius:10px; text-decoration:none; }
+    .cta-secondary { display:inline-block; margin-top:8px; padding:10px 14px; background:#fff; color:#111; border:1px solid var(--line); border-radius:10px; text-decoration:none; }
   </style>
 </head>
 <body>
   <div class="wrap">
     <header class="brand">
-      <img src="assets/logo.png" width="56" height="56" alt="蘋果速成" />
+      <img src="assets/logo.png" width="56" height="56" alt="蘋果速成 Apple SuCheng" />
       <div>
         <h1>蘋果速成 / Apple SuCheng</h1>
         <p class="tag">Windows 速成習慣 → macOS 繁體輸入法 · by Kanaoda</p>
@@ -46,7 +96,8 @@
       <h2>一句話</h2>
       <p>把 Windows 速成的打字節奏搬到 Mac，讓轉場少一點痛苦。</p>
       <p class="links">
-        <a class="cta" href="https://github.com/Kanaoda">GitHub（Kanaoda）</a>
+        <a class="cta" href="https://github.com/Kanaoda/AppleSuCheng/releases">下載 Releases</a>
+        <a class="cta-secondary" href="https://github.com/Kanaoda/AppleSuCheng">GitHub 倉庫</a>
       </p>
     </section>
 
@@ -73,7 +124,9 @@
     <footer>
       <p>© 2026 <strong>Kanaoda</strong> · 蘋果速成 / Apple SuCheng</p>
       <p class="foot-links">
-        <a href="https://github.com/Kanaoda" target="_blank" rel="noopener noreferrer">GitHub</a>
+        <a href="https://github.com/Kanaoda/AppleSuCheng" target="_blank" rel="noopener noreferrer">GitHub</a>
+        <span class="foot-sep" aria-hidden="true">·</span>
+        <a href="https://github.com/Kanaoda/AppleSuCheng/releases" target="_blank" rel="noopener noreferrer">Releases</a>
         <span class="foot-sep" aria-hidden="true">·</span>
         <a href="https://buymeacoffee.com/kanaoda" target="_blank" rel="noopener noreferrer">Buy Me a Coffee</a>
         <span class="foot-sep" aria-hidden="true">·</span>

@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://kanaoda.github.io/AppleSuCheng/sitemap.xml

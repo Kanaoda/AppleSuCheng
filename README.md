@@ -10,6 +10,8 @@
 </p>
 
 <p align="center">
+  <a href="https://kanaoda.github.io/AppleSuCheng/"><strong>官網</strong></a> ·
+  <a href="https://github.com/Kanaoda/AppleSuCheng/releases">Releases</a> ·
   <a href="https://github.com/sponsors/Kanaoda">GitHub Sponsors</a> ·
   <a href="https://buymeacoffee.com/kanaoda">Buy Me a Coffee</a> ·
   <a href="https://payme.hsbc/kanaoda">PayMe</a> ·

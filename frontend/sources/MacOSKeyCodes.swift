@@ -35,6 +35,17 @@ struct AppleSuChengKeycode {
       return UInt32(code)
     }
 
+    // 字母優先走實體鍵碼（XK_a…z），再依 shift/caps 決定大小寫。
+    // 不可先信 keychar：Caps Lock 開著時系統會給大寫，中文組字會被當成西文。
+    if let code = additionalCodeMappings[Int(keycode)],
+       (XK_a...XK_z).contains(code) {
+      // Caps Lock 參與大小寫時才轉大寫；中文路徑會傳 caps=false，故不受 Caps 影響。
+      if shift != caps {
+        return UInt32(code - 0x20)  // XK_a…z → 'A'…'Z'
+      }
+      return UInt32(code)
+    }
+
     if let keychar = keychar, keychar.isASCII, let codeValue = keychar.unicodeScalars.first?.value {
       // IBus/Rime use different keycodes for uppercase and lowercase letters.
       if keychar.isLowercase && (shift != caps) {

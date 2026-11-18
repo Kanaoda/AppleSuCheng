@@ -82,10 +82,12 @@ final class AppleSuChengInputController: IMKInputController {
       }
       let rimeKeycode: UInt32 = AppleSuChengKeycode.osxKeycodeToRime(keycode: keyCode, keychar: nil, shift: false, caps: false)
 
+      // Caps Lock：不送給 Rime、不切中／英。只讓系統維持 Lock 狀態，供切到英文鍵盤時改大小寫。
       if changes.contains(.capsLock) {
-        // Rime expects XK_Caps_Lock before the lock mask changes; NSFlagsChanged has already applied it.
-        rimeModifiers ^= kLockMask.rawValue
-        _ = processKey(rimeKeycode, modifiers: rimeModifiers)
+        lastModifiers = modifiers
+        rimeUpdate()
+        handled = true
+        break
       }
 
       // Process releases first because some modifier releases arrive with the next keydown.
@@ -117,12 +119,20 @@ final class AppleSuChengInputController: IMKInputController {
          (capitalModifiers && !code.isLetter) || (!capitalModifiers && !code.isASCII) {
         keyChars = event.characters
       }
+      // Caps Lock 只服務「本機英文鍵盤」大小寫；在本輸入法內一律忽略，避免大寫字母／Lock
+      // 被 Rime 當成西文或切中／英。中／英切換只走 Shift（sucheng_keys.lua）。
+      let shiftOn = modifiers.contains(.shift)
+      let capsOn = false
+      if modifiers.contains(.capsLock), !shiftOn,
+         let ch = keyChars?.first, ch.isLetter, ch.isUppercase {
+        keyChars = String(ch).lowercased()
+      }
       // Esc／方向鍵等可能沒有 characters；仍必須用 keyCode 送給 Rime，否則會漏給前景 App。
       let rimeKeycode = AppleSuChengKeycode.osxKeycodeToRime(
         keycode: keyCode,
         keychar: keyChars?.first,
-        shift: modifiers.contains(.shift),
-        caps: modifiers.contains(.capsLock)
+        shift: shiftOn,
+        caps: capsOn
       )
       // 必須在 processKey／rimeUpdate 之前判斷：Rime 關閉關聯後 candidates／panel 已空，事後再查會漏吞。
       let isEscape = keyCode == UInt16(kVK_Escape)
@@ -144,7 +154,8 @@ final class AppleSuChengInputController: IMKInputController {
       }
 
       if rimeKeycode != 0 && rimeKeycode != UInt32(XK_VoidSymbol) {
-        let rimeModifiers = AppleSuChengKeycode.osxModifiersToRime(modifiers: modifiers)
+        var rimeModifiers = AppleSuChengKeycode.osxModifiersToRime(modifiers: modifiers)
+        rimeModifiers &= ~kLockMask.rawValue
         handled = processKey(rimeKeycode, modifiers: rimeModifiers)
         rimeUpdate()
       } else if swallowEscape {

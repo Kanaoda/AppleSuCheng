@@ -84,8 +84,9 @@
 	<true/>
 	<key>SUPublicEDKey</key>
 	<string>ukvWq2dKOWn3B9AsdsQIwOptiDdDKdUjAVNgFxSvB2o=</string>
+	<!-- Caps Lock 只影響英文鍵盤大小寫，不可用來切中／英輸入法 -->
 	<key>TICapsLockLanguageSwitchCapable</key>
-	<true/>
+	<false/>
 	<key>TISInputSourceID</key>
 	<string>com.applesucheng.inputmethod.SuCheng</string>
 </dict>

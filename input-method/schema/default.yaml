@@ -31,7 +31,8 @@ ascii_composer:
     Shift_R: noop
     Control_L: noop
     Control_R: noop
-    Caps_Lock: clear
+    # Caps Lock 不切中／英（只影響本機英文鍵盤大小寫；前端也不把 Caps 送給 Rime）
+    Caps_Lock: noop
     Eisu_toggle: clear
 
 punctuator:

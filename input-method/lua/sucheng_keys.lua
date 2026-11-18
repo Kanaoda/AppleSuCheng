@@ -8,6 +8,7 @@
 --   普通選字：→展開、←收起
 --   關聯字：Shift+→展開、Shift+←收起；純 ←／→ 不關閉關聯（展開後由前端走格）
 --   純數字 1-9     → 輸入數字（不選字）
+--   Caps Lock      → 不切中／英；只影響本機英文鍵盤大小寫（前端忽略 Lock）
 --
 -- 注意：不再使用 ascii_composer 的 inline_ascii（會把英文黏在同一組字裡）。
 local kRejected, kAccepted, kNoop = 0, 1, 2

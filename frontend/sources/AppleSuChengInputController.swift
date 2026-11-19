@@ -69,6 +69,8 @@ final class AppleSuChengInputController: IMKInputController {
         break
       }
       var rimeModifiers: UInt32 = AppleSuChengKeycode.osxModifiersToRime(modifiers: modifiers)
+      // Caps Lock 不可黏在 Shift／修飾鍵上，否則 Rime repr 變 Lock+Shift_L，關聯字與中英切換會壞。
+      rimeModifiers &= ~kLockMask.rawValue
       // Some remote desktop tools send flagsChanged with keyCode 0; infer the real modifier key when needed.
       var keyCode = event.keyCode
       if !AppleSuChengKeycode.modifierKeycodes.contains(keyCode) {
@@ -82,7 +84,7 @@ final class AppleSuChengInputController: IMKInputController {
       }
       let rimeKeycode: UInt32 = AppleSuChengKeycode.osxKeycodeToRime(keycode: keyCode, keychar: nil, shift: false, caps: false)
 
-      // Caps Lock：不送給 Rime、不切中／英。只讓系統維持 Lock 狀態，供切到英文鍵盤時改大小寫。
+      // Caps Lock：不送給 Rime、不切中／英。LED 仍由系統維持，供英文大小寫使用。
       if changes.contains(.capsLock) {
         lastModifiers = modifiers
         rimeUpdate()
@@ -119,11 +121,13 @@ final class AppleSuChengInputController: IMKInputController {
          (capitalModifiers && !code.isLetter) || (!capitalModifiers && !code.isASCII) {
         keyChars = event.characters
       }
-      // Caps Lock 只服務「本機英文鍵盤」大小寫；在本輸入法內一律忽略，避免大寫字母／Lock
-      // 被 Rime 當成西文或切中／英。中／英切換只走 Shift（sucheng_keys.lua）。
+      // Caps Lock：不切中／英。中文碼忽略 Caps；英文（ascii／Shift 臨時英文）受 Caps 影響。
       let shiftOn = modifiers.contains(.shift)
-      let capsOn = false
-      if modifiers.contains(.capsLock), !shiftOn,
+      let capsHardware = modifiers.contains(.capsLock)
+      let asciiMode = session != 0 && rimeAPI.get_option(session, "ascii_mode")
+      let englishPath = asciiMode || shiftOn
+      let capsForCase = englishPath && capsHardware
+      if !englishPath, capsHardware,
          let ch = keyChars?.first, ch.isLetter, ch.isUppercase {
         keyChars = String(ch).lowercased()
       }
@@ -132,7 +136,7 @@ final class AppleSuChengInputController: IMKInputController {
         keycode: keyCode,
         keychar: keyChars?.first,
         shift: shiftOn,
-        caps: capsOn
+        caps: capsForCase
       )
       // 必須在 processKey／rimeUpdate 之前判斷：Rime 關閉關聯後 candidates／panel 已空，事後再查會漏吞。
       let isEscape = keyCode == UInt16(kVK_Escape)
@@ -155,7 +159,11 @@ final class AppleSuChengInputController: IMKInputController {
 
       if rimeKeycode != 0 && rimeKeycode != UInt32(XK_VoidSymbol) {
         var rimeModifiers = AppleSuChengKeycode.osxModifiersToRime(modifiers: modifiers)
-        rimeModifiers &= ~kLockMask.rawValue
+        // 中文碼去掉 Lock，避免大寫／Lock 干擾組字；英文路徑保留 Lock 供 Lua 判斷大小寫。
+        // Shift+數字選關聯字的 Lock 前綴由 Lua strip_lock 消化。
+        if !englishPath {
+          rimeModifiers &= ~kLockMask.rawValue
+        }
         handled = processKey(rimeKeycode, modifiers: rimeModifiers)
         rimeUpdate()
       } else if swallowEscape {
@@ -266,7 +274,8 @@ final class AppleSuChengInputController: IMKInputController {
     return texts.isEmpty ? nil : (texts, comments)
   }
 
-  /// 展開表格導航。普通選字：←／→ 走欄，最左 ← 收起。關聯字：←／→ 走欄，Shift+←／→ 收起。
+  /// 展開表格導航。普通選字：←／→ 走欄，最左 ← 收起。
+  /// 關聯字：Shift+←／→ 收起／展開；純方向鍵不攔截，交給 Lua 離開關聯頁。
   private func handleExpandedTableKey(keyCode: UInt16, keyChars: String?, modifiers: NSEvent.ModifierFlags) -> Bool {
     let pageSize = Self.tablePageSize
     let count = max(expandedCandidateCount, 1)
@@ -299,17 +308,25 @@ final class AppleSuChengInputController: IMKInputController {
       }
     }
 
+    // 關聯字＋純方向鍵：不在此攔截，讓 Lua 關閉關聯並放行給 App。
+    if isAssociationMenu, mods.isEmpty {
+      switch Int(keyCode) {
+      case kVK_LeftArrow, kVK_RightArrow, kVK_UpArrow, kVK_DownArrow:
+        return false
+      default:
+        break
+      }
+    }
+
     guard mods.isEmpty else { return false }
 
     switch Int(keyCode) {
     case kVK_LeftArrow:
       if col == 0 {
-        // 普通選字：最左欄 ← 收起；關聯字：停在最左欄（收起改用 Shift+←）
-        if !isAssociationMenu {
-          rimeAPI.set_option(session, "expanded_menu", false)
-          _ = rimeAPI.highlight_candidate(session, min(row, pageSize - 1))
-          rimeUpdate()
-        }
+        // 普通選字：最左欄 ← 收起
+        rimeAPI.set_option(session, "expanded_menu", false)
+        _ = rimeAPI.highlight_candidate(session, min(row, pageSize - 1))
+        rimeUpdate()
         return true
       }
       moveExpandedFocus(to: (col - 1) * pageSize + row)

@@ -1,14 +1,14 @@
 -- 蘋果速成 / Apple SuCheng · Author: Kanaoda
 -- 接近 Windows 速成的關聯字／中英切換行為：
 --   輕按 Shift     → 切中／英（先結束目前組字，避免英文延續進中文）
---   按住 Shift+字母 → 中文模式下輸出小寫英文（不上屏到組字緩衝）
---   按住 Shift+1-9 → 選關聯字
+--   按住 Shift+字母 → 中文模式下輸出英文（預設小寫；Caps Lock 開則大寫）
+--   按住 Shift+1-9 → 選關聯字（有 Caps Lock 時行為不變）
 --   Space          → 循環翻關聯字頁
 --   Esc／Backspace → 關閉關聯字（吞鍵，不傳給前景 App）
 --   普通選字：→展開、←收起
---   關聯字：Shift+→展開、Shift+←收起；純 ←／→ 不關閉關聯（展開後由前端走格）
+--   關聯字：Shift+→展開、Shift+←收起；純方向鍵 → 離開關聯字頁面（放行給 App）
 --   純數字 1-9     → 輸入數字（不選字）
---   Caps Lock      → 不切中／英；只影響本機英文鍵盤大小寫（前端忽略 Lock）
+--   Caps Lock      → 不切中／英；只影響英文大小寫（含 Shift 臨時英文／ascii）
 --
 -- 注意：不再使用 ascii_composer 的 inline_ascii（會把英文黏在同一組字裡）。
 local kRejected, kAccepted, kNoop = 0, 1, 2
@@ -75,22 +75,30 @@ local SHIFT_SELECT = {
   ["Shift+9"] = 8, ["Shift+parenleft"] = 8, parenleft = 8, ["("] = 8,
 }
 
+-- Caps Lock 開時 Rime repr 常帶 Lock+ 前綴；比對前先剝掉，避免 Shift／關聯字全壞。
+local function strip_lock(repr)
+  if not repr then return repr end
+  return (repr:gsub("^Lock%+", ""):gsub("%+Lock", ""))
+end
+
 local function is_shift_only(repr)
-  return repr == "Shift_L" or repr == "Shift_R"
-      or repr == "Shift+Shift_L" or repr == "Shift+Shift_R"
-      or repr:match("^Shift%+Shift_")
+  local r = strip_lock(repr)
+  return r == "Shift_L" or r == "Shift_R"
+      or r == "Shift+Shift_L" or r == "Shift+Shift_R"
+      or r:match("^Shift%+Shift_")
 end
 
 local function is_modifier_only(repr)
-  return is_shift_only(repr)
-      or repr == "Control_L" or repr == "Control_R"
-      or repr == "Control+Control_L" or repr == "Control+Control_R"
-      or repr == "Alt_L" or repr == "Alt_R"
-      or repr == "Option_L" or repr == "Option_R"
-      or repr == "Super_L" or repr == "Super_R"
-      or repr == "Meta_L" or repr == "Meta_R"
-      or repr == "Caps_Lock"
-      or repr:match("^Control%+Control_")
+  local r = strip_lock(repr)
+  return is_shift_only(r)
+      or r == "Control_L" or r == "Control_R"
+      or r == "Control+Control_L" or r == "Control+Control_R"
+      or r == "Alt_L" or r == "Alt_R"
+      or r == "Option_L" or r == "Option_R"
+      or r == "Super_L" or r == "Super_R"
+      or r == "Meta_L" or r == "Meta_R"
+      or r == "Caps_Lock"
+      or r:match("^Control%+Control_")
 end
 
 local function is_prediction(ctx)
@@ -176,37 +184,46 @@ local function handle_expand_keys(key, env, ctx, repr)
   if not ctx:has_menu() then
     return nil
   end
+  local r = strip_lock(repr)
   local prediction = is_prediction(ctx)
   if prediction then
-    -- 關聯字：Shift+←／→ 展開／收起；純 ←／→ 吞掉，避免關掉關聯字選單
-    local base = tostring(repr or ""):gsub("^Shift%+", "")
-    if base ~= "Right" and base ~= "KP_Right" and base ~= "Left" and base ~= "KP_Left" then
+    -- 關聯字：Shift+←／→ 展開／收起；純方向鍵離開關聯頁並放行給 App
+    local base = tostring(r or ""):gsub("^Shift%+", "")
+    local is_arrow = (base == "Right" or base == "KP_Right" or base == "Left" or base == "KP_Left"
+        or base == "Up" or base == "KP_Up" or base == "Down" or base == "KP_Down")
+    if not is_arrow then
       return nil
     end
     if key:shift() then
       if base == "Right" or base == "KP_Right" then
         return set_menu_expanded(env, ctx, true)
       end
-      return set_menu_expanded(env, ctx, false)
+      if base == "Left" or base == "KP_Left" then
+        return set_menu_expanded(env, ctx, false)
+      end
+      -- Shift+↑／↓：不特別處理，交給後續
+      return nil
     end
-    -- 收起態：純方向鍵不關閉關聯；展開態交前端走格（此處仍吞掉以免漏到 dismiss）
-    return kAccepted
+    dbg("dismiss prediction via plain arrow=" .. tostring(r))
+    dismiss_prediction(ctx, env)
+    restore_prediction(ctx)
+    return kNoop
   end
   -- 普通選字：純 ←／→（不要 Shift）
   if key:shift() then
     return nil
   end
-  if repr == "Right" or repr == "KP_Right" then
+  if r == "Right" or r == "KP_Right" then
     return set_menu_expanded(env, ctx, true)
   end
-  if repr == "Left" or repr == "KP_Left" then
+  if r == "Left" or r == "KP_Left" then
     return set_menu_expanded(env, ctx, false)
   end
   return nil
 end
 
 local function commit_raw(env, key, repr)
-  local text = RAW[repr]
+  local text = RAW[strip_lock(repr)]
   if not text and key.chr then
     local ok, c = pcall(function() return key:chr() end)
     if ok then
@@ -246,15 +263,16 @@ local function shift_select_index(key, repr)
   if key:ctrl() or key:alt() or key:super() then
     return nil
   end
-  if repr:match("^Shift%+") and SHIFT_SELECT[repr] ~= nil then
-    return SHIFT_SELECT[repr]
+  local r = strip_lock(repr)
+  if r:match("^Shift%+") and SHIFT_SELECT[r] ~= nil then
+    return SHIFT_SELECT[r]
   end
   if key:shift() then
-    local d = repr:match("^([1-9])$")
+    local d = r:match("^([1-9])$")
     if d then return tonumber(d) - 1 end
   end
-  if SHIFT_SELECT[repr] ~= nil and not repr:match("^[0-9]$") then
-    return SHIFT_SELECT[repr]
+  if SHIFT_SELECT[r] ~= nil and not r:match("^[0-9]$") then
+    return SHIFT_SELECT[r]
   end
   return nil
 end
@@ -304,12 +322,17 @@ local function shift_letter(key, repr)
   if is_modifier_only(repr) then
     return nil
   end
-  local ch = repr:match("^Shift%+([A-Za-z])$")
-  if not ch and repr:match("^[A-Za-z]$") then
-    ch = repr
+  local r = strip_lock(repr)
+  local ch = r:match("^Shift%+([A-Za-z])$")
+  if not ch and r:match("^[A-Za-z]$") then
+    ch = r
   end
   if not ch then
     return nil
+  end
+  -- Shift 表示打臨時英文；Caps Lock 決定大小寫（開→大寫，關→小寫）
+  if key:caps() then
+    return ch:upper()
   end
   return ch:lower()
 end
@@ -350,7 +373,7 @@ local function mark_shift_used(env)
   end
 end
 
-local function commit_lowercase_latin(ctx, env, letter)
+local function commit_latin(ctx, env, letter)
   mark_shift_used(env)
   if is_prediction(ctx) then
     dismiss_prediction(ctx, env)
@@ -433,19 +456,19 @@ local function processor(key, env)
 
   if key:release() then return kNoop end
 
-  -- 普通選字 ←／→；關聯字 Shift+←／→（展開後表格導航由前端處理）
+  -- 普通選字 ←／→；關聯字 Shift+←／→ 展開／收起，純方向鍵離開關聯頁
   local expand_result = handle_expand_keys(key, env, ctx, repr)
   if expand_result ~= nil then
     return expand_result
   end
 
-  -- 中文模式：按住 Shift 打字 → 撤銷誤切換，輸出小寫英文
+  -- 中文模式：按住 Shift 打字 → 撤銷誤切換，輸出英文（Caps 影響大小寫）
   local letter = shift_letter(key, repr)
   if letter then
     undo_shift_toggle_if_chord(ctx, env)
     if not ctx:get_option("ascii_mode") then
-      dbg("shift_latin lower=" .. letter)
-      commit_lowercase_latin(ctx, env, letter)
+      dbg("shift_latin text=" .. letter .. " caps=" .. tostring(key:caps()))
+      commit_latin(ctx, env, letter)
       return kAccepted
     end
     -- 若撤銷後仍是英文模式（理論上 before 為 true），放行給英文輸入
